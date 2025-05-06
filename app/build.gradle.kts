@@ -56,7 +56,9 @@ dependencies {
     implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
     implementation ("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation ("com.github.skydoves:colorpickerview:2.3.0")
+    implementation ("com.github.skydoves:colorpickerview:2.2.4")
 
 
-   // implementation ("com.kyanogen.signatureview:signature-view:1.2")
+
+    // implementation ("com.kyanogen.signatureview:signature-view:1.2")
 }

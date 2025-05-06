@@ -6,4 +6,5 @@ import androidx.lifecycle.ViewModel
 class DrawingViewModel : ViewModel() {
     val currentColor = MutableLiveData<Int>(Color.BLACK)
     val currentBrush = MutableLiveData<String>("pencil")
+    val currentGeometryTool = MutableLiveData<DrawingView.GeometryTool>(DrawingView.GeometryTool.NONE)
 }

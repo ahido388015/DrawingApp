@@ -1,0 +1,63 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerInside"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical"
+        android:background="#80000000"
+        android:padding="16dp">
+
+        <Button
+            android:id="@+id/changeBackgroundButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Thay đổi màu nền"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Độ sáng"
+            android:textColor="@color/white"/>
+
+        <SeekBar
+            android:id="@+id/brightnessSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="100"
+            android:progress="50"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Độ tương phản"
+            android:textColor="@color/white"/>
+
+        <SeekBar
+            android:id="@+id/contrastSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="100"
+            android:progress="50"/>
+
+        <Button
+            android:id="@+id/resetButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Reset"/>
+
+        <Button
+            android:id="@+id/saveImageButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Lưu ảnh"/>
+    </LinearLayout>
+</RelativeLayout>

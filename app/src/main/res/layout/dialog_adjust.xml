@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Độ sáng"
+        android:textStyle="bold" />
+
+    <SeekBar
+        android:id="@+id/brightnessSeekBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="200"
+        android:progress="100" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tương phản"
+        android:textStyle="bold" />
+
+    <SeekBar
+        android:id="@+id/contrastSeekBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="200"
+        android:progress="100" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Màu nền"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/backgroundButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Chọn màu nền" />
+
+</LinearLayout>
