@@ -2,51 +2,97 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:padding="16dp"
-    app:cardCornerRadius="16dp"
-    >
+    android:background="@drawable/dialog_background"
+    android:layout_margin="16dp">
 
+    <!-- Tiêu đề -->
+    <ImageView
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:src="@drawable/title_pixel_mode"
+        android:layout_gravity="center"
+        android:paddingBottom="16dp"
+        />
+
+    <!-- Chiều rộng -->
     <TextView
-        android:text="Số pixel ngang:"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-
+        android:layout_height="wrap_content"
+        android:text="Width (≥10):"
+        android:textSize="14sp"
+        />
     <EditText
         android:id="@+id/etWidth"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:inputType="number"
         android:text="50"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:padding="8dp"
+        />
 
+    <!-- Chiều cao -->
     <TextView
-        android:text="Số pixel dọc:"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-
+        android:layout_height="wrap_content"
+        android:text="Heigth (≥10):"
+        android:textSize="14sp"
+        android:layout_marginTop="8dp"
+        />
     <EditText
         android:id="@+id/etHeight"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:inputType="number"
         android:text="50"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:padding="8dp"
+        />
 
+    <!-- Kích thước pixel -->
     <TextView
-        android:text="Kích thước pixel:"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-
+        android:layout_height="wrap_content"
+        android:text="Pixel size (≥10):"
+        android:textSize="14sp"
+        android:layout_marginTop="8dp"
+        />
     <EditText
         android:id="@+id/etPixelSize"
-        android:inputType="number"
-        android:text="10"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:text="15"
+        android:padding="8dp"
+         />
+
+    <!-- Checkbox hiển thị lưới -->
     <CheckBox
-        android:id="@+id/cbShowGrid1"
-        android:text="Hiển thị lưới pixel"
-        android:checked="true"
+        android:id="@+id/cbShowGrid"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:text="View Grid"
+        android:layout_marginTop="8dp"
+         />
+
+    <!-- Nút điều khiển -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp"
+        android:gravity="end">
+        <Button
+            android:id="@+id/cancel_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancel" />
+        <Button
+            android:id="@+id/ok_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="OK"
+            android:layout_marginStart="8dp"
+         />
+    </LinearLayout>
 </LinearLayout>

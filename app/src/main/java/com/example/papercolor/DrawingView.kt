@@ -2,17 +2,22 @@ package com.example.papercolor
 
 import android.content.Context
 import android.graphics.*
+import android.os.Environment
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import java.io.File
+import java.io.FileOutputStream
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
+
 
 class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) {
 
@@ -37,10 +42,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         style = Paint.Style.FILL
         isAntiAlias = false
     }
-
-    // Biến để chèn ảnh
-    private var backgroundBitmap: Bitmap? = null
-    private var backgroundRect: RectF? = null
 
     // List text
     private val texts = mutableListOf<TextItem>()
@@ -75,35 +76,40 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     private var tempPath = Path() // Path tạm thời để hiển thị hình khi kéo
     private var isDrawingGeometry = false // Biến kiểm soát trạng thái vẽ hình học
 
+    // List chứa tất cả ảnh
+    private val imageItems = mutableListOf<ImageItem>()
+    private var selectedImageIndex = -1
+    private var currentResizeHandle = ResizeHandle.NONE
+    private var lastTouchTime: Long = 0
+    private var isResizingImage = false
+    private var isMovingImage = false
+    private var touchOffsetX = 0f
+    private var touchOffsetY = 0f
+
+    // Stack để quản lý lịch sử ảnh nền
     private val backgroundStack = mutableListOf<Bitmap?>()
     private var currentBackgroundIndex = -1
 
-    // Hàm mới để cập nhật ảnh nền từ stack
-    private fun updateCurrentBackground() {
-        backgroundBitmap = backgroundStack.getOrNull(currentBackgroundIndex)?.let {
-            it.copy(it.config ?: Bitmap.Config.ARGB_8888, true)
-        }
-        calculateBackgroundRect()
-        invalidate()
+    // Biến để kiểm soát trạng thái bút xóa
+    private var isEraseMode = false
+
+    // Biến kiểm soát trạng thái điều chỉnh ảnh
+    private var isAdjustingImageMode = false // Chế độ điều chỉnh ảnh riêng biệt
+
+    // Enum để xác định handle resize
+    private enum class ResizeHandle {
+        NONE, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, MOVE
     }
 
-    private fun calculateBackgroundRect() {
-        backgroundBitmap?.let { bitmap ->
-            val viewWidth = width.toFloat()
-            val viewHeight = height.toFloat()
-            val imageWidth = bitmap.width.toFloat()
-            val imageHeight = bitmap.height.toFloat()
-
-            val scale = min(viewWidth / imageWidth, viewHeight / imageHeight)
-            val scaledWidth = imageWidth * scale
-            val scaledHeight = imageHeight * scale
-
-            val left = (viewWidth - scaledWidth) / 2
-            val top = (viewHeight - scaledHeight) / 2
-
-            backgroundRect = RectF(left, top, left + scaledWidth, top + scaledHeight)
-        }
-    }
+    // Class để lưu thông tin ảnh
+    private data class ImageItem(
+        val bitmap: Bitmap,
+        var rect: RectF,
+        var isSelected: Boolean = false,
+        var originalWidth: Int = bitmap.width,
+        var originalHeight: Int = bitmap.height,
+        var isAdjustable: Boolean = true // Biến để kiểm soát trạng thái điều chỉnh của ảnh
+    )
 
     init {
         scaleDetector = ScaleGestureDetector(context, ScaleListener())
@@ -111,6 +117,22 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
 
     private inner class ScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScale(detector: ScaleGestureDetector): Boolean {
+            if (isAdjustingImageMode && selectedImageIndex != -1) {
+                val imageItem = imageItems[selectedImageIndex]
+                val scale = detector.scaleFactor
+                val newWidth = imageItem.rect.width() * scale
+                val newHeight = imageItem.rect.height() * scale
+                val pivotX = imageItem.rect.centerX()
+                val pivotY = imageItem.rect.centerY()
+
+                imageItem.rect.left = pivotX - newWidth / 2
+                imageItem.rect.top = pivotY - newHeight / 2
+                imageItem.rect.right = pivotX + newWidth / 2
+                imageItem.rect.bottom = pivotY + newHeight / 2
+
+                invalidate()
+                return true
+            }
             scaleFactor *= detector.scaleFactor
             scaleFactor = scaleFactor.coerceIn(0.1f, 5.0f)
             invalidate()
@@ -143,6 +165,20 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         }
     }
 
+    // Hàm mới để kiểm tra touch vào handle resize
+    private fun getResizeHandleForPoint(x: Float, y: Float, rect: RectF): ResizeHandle {
+        val handleSize = 30f / scaleFactor
+
+        if (abs(x - rect.left) < handleSize && abs(y - rect.top) < handleSize) return ResizeHandle.TOP_LEFT
+        if (abs(x - rect.right) < handleSize && abs(y - rect.top) < handleSize) return ResizeHandle.TOP_RIGHT
+        if (abs(x - rect.left) < handleSize && abs(y - rect.bottom) < handleSize) return ResizeHandle.BOTTOM_LEFT
+        if (abs(x - rect.right) < handleSize && abs(y - rect.bottom) < handleSize) return ResizeHandle.BOTTOM_RIGHT
+
+        if (rect.contains(x, y)) return ResizeHandle.MOVE
+
+        return ResizeHandle.NONE
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
@@ -150,9 +186,31 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         canvas.translate(posX, posY)
         canvas.scale(scaleFactor, scaleFactor)
 
-        backgroundBitmap?.let { bitmap ->
-            backgroundRect?.let { rect ->
-                canvas.drawBitmap(bitmap, null, rect, null)
+        // Vẽ tất cả ảnh từ imageItems
+        for ((index, imageItem) in imageItems.withIndex()) {
+            val srcRect = Rect(0, 0, imageItem.originalWidth, imageItem.originalHeight)
+            canvas.drawBitmap(imageItem.bitmap, srcRect, imageItem.rect, null)
+
+            if (imageItem.isSelected && isAdjustingImageMode) {
+                val handlePaint = Paint().apply {
+                    color = Color.BLUE
+                    style = Paint.Style.FILL
+                    strokeWidth = 2f
+                }
+
+                val borderPaint = Paint().apply {
+                    color = Color.BLUE
+                    style = Paint.Style.STROKE
+                    strokeWidth = 2f
+                }
+
+                canvas.drawRect(imageItem.rect, borderPaint)
+
+                val handleSize = 15f
+                canvas.drawCircle(imageItem.rect.left, imageItem.rect.top, handleSize, handlePaint)
+                canvas.drawCircle(imageItem.rect.right, imageItem.rect.top, handleSize, handlePaint)
+                canvas.drawCircle(imageItem.rect.left, imageItem.rect.bottom, handleSize, handlePaint)
+                canvas.drawCircle(imageItem.rect.right, imageItem.rect.bottom, handleSize, handlePaint)
             }
         }
 
@@ -162,7 +220,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
 
         canvas.drawPath(path, paint)
 
-        // Vẽ hình học tạm thời
         if (geometryMode != GeometryTool.NONE && isDrawingGeometry) {
             tempPath.reset()
             when (geometryMode) {
@@ -185,9 +242,9 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                     val radius = sqrt((endX - startX).pow(2) + (endY - startY).pow(2))
                     val centerX = startX
                     val centerY = startY
-                    tempPath.moveTo(centerX, centerY - radius) // Đỉnh trên
-                    tempPath.lineTo(centerX - radius * cos(PI / 6).toFloat(), centerY + radius * sin(PI / 6).toFloat()) // Đỉnh trái dưới
-                    tempPath.lineTo(centerX + radius * cos(PI / 6).toFloat(), centerY + radius * sin(PI / 6).toFloat()) // Đỉnh phải dưới
+                    tempPath.moveTo(centerX, centerY - radius)
+                    tempPath.lineTo(centerX - radius * cos(PI / 6).toFloat(), centerY + radius * sin(PI / 6).toFloat())
+                    tempPath.lineTo(centerX + radius * cos(PI / 6).toFloat(), centerY + radius * sin(PI / 6).toFloat())
                     tempPath.close()
                 }
                 GeometryTool.NONE -> {}
@@ -209,7 +266,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         scaleDetector.onTouchEvent(event)
 
-        // Xử lý riêng cho chế độ pixel
         if (isPixelMode) {
             when (event.action and MotionEvent.ACTION_MASK) {
                 MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
@@ -243,7 +299,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             }
         }
 
-        // Xử lý chế độ hình học
         if (geometryMode != GeometryTool.NONE) {
             val invertedMatrix = Matrix()
             val transformMatrix = Matrix().apply {
@@ -298,9 +353,9 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                                 val radius = sqrt((endX - startX).pow(2) + (endY - startY).pow(2))
                                 val centerX = startX
                                 val centerY = startY
-                                finalPath.moveTo(centerX, centerY - radius) // Đỉnh trên
-                                finalPath.lineTo(centerX - radius * cos(PI / 6).toFloat(), centerY + radius * sin(PI / 6).toFloat()) // Đỉnh trái dưới
-                                finalPath.lineTo(centerX + radius * cos(PI / 6).toFloat(), centerY + radius * sin(PI / 6).toFloat()) // Đỉnh phải dưới
+                                finalPath.moveTo(centerX, centerY - radius)
+                                finalPath.lineTo(centerX - radius * cos(PI / 6).toFloat(), centerY + radius * sin(PI / 6).toFloat())
+                                finalPath.lineTo(centerX + radius * cos(PI / 6).toFloat(), centerY + radius * sin(PI / 6).toFloat())
                                 finalPath.close()
                             }
                             GeometryTool.NONE -> {}
@@ -319,7 +374,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             return true
         }
 
-        // Xử lý chế độ text
         if (isTextMode && currentText != null) {
             when (event.action and MotionEvent.ACTION_MASK) {
                 MotionEvent.ACTION_UP -> {
@@ -348,28 +402,128 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             return true
         }
 
-        // Xử lý chế độ vẽ thông thường
+        val invertedMatrix = Matrix()
+        val transformMatrix = Matrix().apply {
+            postTranslate(posX, posY)
+            postScale(scaleFactor, scaleFactor)
+            invert(invertedMatrix)
+        }
+        val pts = floatArrayOf(event.x, event.y)
+        invertedMatrix.mapPoints(pts)
+        val x = pts[0]
+        val y = pts[1]
+
         when (event.action and MotionEvent.ACTION_MASK) {
             MotionEvent.ACTION_DOWN -> {
-                if (scaleDetector.isInProgress) return true
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastTouchTime < 300) { // Chạm đúp
+                    if (selectedImageIndex != -1 && isAdjustingImageMode) {
+                        // Khi chạm đúp, cố định ảnh
+                        imageItems[selectedImageIndex].isSelected = false
+                        imageItems[selectedImageIndex].isAdjustable = false
+                        selectedImageIndex = -1
+                        isAdjustingImageMode = false
+                        invalidate()
+                    }
+                    lastTouchTime = 0
+                    return true
+                }
+                lastTouchTime = currentTime
 
-                lastTouchX = event.x
-                lastTouchY = event.y
+                if (isAdjustingImageMode) {
+                    // Kiểm tra xem có chọn được ảnh nào để điều chỉnh không
+                    for ((index, imageItem) in imageItems.withIndex()) {
+                        if (imageItem.rect.contains(x, y) && imageItem.isAdjustable) {
+                            imageItems.forEach { it.isSelected = false }
+                            imageItem.isSelected = true
+                            selectedImageIndex = index
 
-                val invertedMatrix = Matrix()
-                val transformMatrix = Matrix().apply {
-                    postTranslate(posX, posY)
-                    postScale(scaleFactor, scaleFactor)
-                    invert(invertedMatrix)
+                            currentResizeHandle = getResizeHandleForPoint(x, y, imageItem.rect)
+                            isResizingImage = currentResizeHandle != ResizeHandle.NONE
+                            isMovingImage = currentResizeHandle == ResizeHandle.MOVE
+
+                            if (isMovingImage) {
+                                touchOffsetX = x - imageItem.rect.left
+                                touchOffsetY = y - imageItem.rect.top
+                            }
+
+                            invalidate()
+                            return true
+                        }
+                    }
+
+                    // Nếu không chọn được ảnh nào, thoát chế độ điều chỉnh
+                    if (selectedImageIndex != -1) {
+                        imageItems[selectedImageIndex].isSelected = false
+                        selectedImageIndex = -1
+                        isAdjustingImageMode = false
+                        invalidate()
+                    }
                 }
 
-                val pts = floatArrayOf(event.x, event.y)
-                invertedMatrix.mapPoints(pts)
-
-                path.moveTo(pts[0], pts[1])
+                // Nếu không ở chế độ điều chỉnh ảnh, bắt đầu vẽ đường path
+                lastTouchX = event.x
+                lastTouchY = event.y
+                path.moveTo(x, y)
                 return true
             }
             MotionEvent.ACTION_MOVE -> {
+                if (isAdjustingImageMode && selectedImageIndex != -1 && imageItems[selectedImageIndex].isAdjustable) {
+                    val imageItem = imageItems[selectedImageIndex]
+
+                    if (isResizingImage) {
+                        when (currentResizeHandle) {
+                            ResizeHandle.TOP_LEFT -> {
+                                imageItem.rect.left = x
+                                imageItem.rect.top = y
+                            }
+                            ResizeHandle.TOP_RIGHT -> {
+                                imageItem.rect.right = x
+                                imageItem.rect.top = y
+                            }
+                            ResizeHandle.BOTTOM_LEFT -> {
+                                imageItem.rect.left = x
+                                imageItem.rect.bottom = y
+                            }
+                            ResizeHandle.BOTTOM_RIGHT -> {
+                                imageItem.rect.right = x
+                                imageItem.rect.bottom = y
+                            }
+                            ResizeHandle.MOVE -> {
+                                val newLeft = x - touchOffsetX
+                                val newTop = y - touchOffsetY
+                                val width = imageItem.rect.width()
+                                val height = imageItem.rect.height()
+
+                                imageItem.rect.left = newLeft
+                                imageItem.rect.top = newTop
+                                imageItem.rect.right = newLeft + width
+                                imageItem.rect.bottom = newTop + height
+                            }
+                            ResizeHandle.NONE -> {}
+                        }
+
+                        if (imageItem.rect.width() < 20f) {
+                            if (currentResizeHandle == ResizeHandle.TOP_LEFT || currentResizeHandle == ResizeHandle.BOTTOM_LEFT) {
+                                imageItem.rect.left = imageItem.rect.right - 20f
+                            } else {
+                                imageItem.rect.right = imageItem.rect.left + 20f
+                            }
+                        }
+
+                        if (imageItem.rect.height() < 20f) {
+                            if (currentResizeHandle == ResizeHandle.TOP_LEFT || currentResizeHandle == ResizeHandle.TOP_RIGHT) {
+                                imageItem.rect.top = imageItem.rect.bottom - 20f
+                            } else {
+                                imageItem.rect.bottom = imageItem.rect.top + 20f
+                            }
+                        }
+
+                        invalidate()
+                        return true
+                    }
+                }
+
                 if (scaleDetector.isInProgress) {
                     val focusX = scaleDetector.focusX
                     val focusY = scaleDetector.focusY
@@ -385,23 +539,20 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
 
                     invalidate()
                 } else {
-                    val invertedMatrix = Matrix()
-                    val transformMatrix = Matrix().apply {
-                        postTranslate(posX, posY)
-                        postScale(scaleFactor, scaleFactor)
-                        invert(invertedMatrix)
-                    }
-
-                    val pts = floatArrayOf(event.x, event.y)
-                    invertedMatrix.mapPoints(pts)
-
-                    path.lineTo(pts[0], pts[1])
+                    // Vẽ đường path nếu không ở chế độ điều chỉnh ảnh
+                    path.lineTo(x, y)
                     invalidate()
                 }
                 return true
             }
             MotionEvent.ACTION_UP -> {
-                if (!scaleDetector.isInProgress) {
+                if (isAdjustingImageMode && selectedImageIndex != -1) {
+                    isResizingImage = false
+                    isMovingImage = false
+                    currentResizeHandle = ResizeHandle.NONE
+                }
+
+                if (!scaleDetector.isInProgress && !isAdjustingImageMode) {
                     paths.add(Pair(Path(path), Paint(paint)))
                     undonePaths.clear()
                     path.reset()
@@ -414,7 +565,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         return true
     }
 
-    // Reset zoom và pan về mặc định
     fun resetZoom() {
         scaleFactor = 1.0f
         posX = 0f
@@ -422,22 +572,24 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         invalidate()
     }
 
-    // Set màu cho brush
     fun setColor(color: Int) {
-        paint.color = color
-        pixelPaint.color = color
+        if (!isEraseMode) { // Chỉ thay đổi màu nếu không ở chế độ xóa
+            paint.color = color
+            pixelPaint.color = color
+        }
     }
 
-    // Set kiểu bút
     fun setBrushStyle(style: String) {
         when (style) {
             "marker" -> {
                 paint.strokeWidth = 10f
                 paint.style = Paint.Style.STROKE
+                paint.strokeCap = Paint.Cap.ROUND
             }
             "feather" -> {
-                paint.strokeWidth = 5f
+                paint.strokeWidth = 7f
                 paint.style = Paint.Style.STROKE
+                paint.strokeCap = Paint.Cap.ROUND
             }
             "pencil" -> {
                 paint.strokeWidth = 4f
@@ -448,12 +600,21 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                 paint.style = Paint.Style.STROKE
             }
         }
+        isEraseMode = false // Tắt chế độ xóa khi thay đổi kiểu bút
+        geometryMode = GeometryTool.NONE // Tắt chế độ hình học khi thay đổi kiểu bút
+        tempPath.reset()
+        isDrawingGeometry = false
+        isAdjustingImageMode = false // Tắt chế độ điều chỉnh ảnh
     }
 
-    // Bút xóa
     fun erase() {
-        paint.color = Color.WHITE
+        isEraseMode = true
+        paint.color = Color.WHITE // Luôn là màu trắng
         paint.strokeWidth = 20f
+        geometryMode = GeometryTool.NONE // Tắt chế độ hình học khi kích hoạt bút xóa
+        tempPath.reset()
+        isDrawingGeometry = false
+        isAdjustingImageMode = false // Tắt chế độ điều chỉnh ảnh
     }
 
     fun undo(): Boolean {
@@ -463,6 +624,12 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             true
         } else if (texts.isNotEmpty()) {
             undoneTexts.add(texts.removeAt(texts.size - 1))
+            invalidate()
+            true
+        } else if (imageItems.isNotEmpty() && selectedImageIndex == imageItems.size - 1) {
+            imageItems.removeAt(imageItems.size - 1)
+            selectedImageIndex = -1
+            isAdjustingImageMode = false
             invalidate()
             true
         } else {
@@ -502,26 +669,44 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         return false
     }
 
+    private fun updateCurrentBackground() {
+        val bitmap = backgroundStack.getOrNull(currentBackgroundIndex)
+        if (bitmap != null && imageItems.isNotEmpty()) {
+            imageItems[0] = ImageItem(
+                bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true),
+                imageItems[0].rect,
+                true,
+                bitmap.width,
+                bitmap.height,
+                imageItems[0].isAdjustable
+            )
+            invalidate()
+        }
+    }
+
     fun clear() {
         paths.clear()
         undonePaths.clear()
         path.reset()
         texts.clear()
         undoneTexts.clear()
-        backgroundBitmap = null
-        backgroundStack.clear()
-        currentBackgroundIndex = -1
+        imageItems.clear()
+        selectedImageIndex = -1
         isPixelMode = false
         isTextMode = false
         currentText = null
         geometryMode = GeometryTool.NONE
         isDrawingGeometry = false
+        isEraseMode = false
+        isAdjustingImageMode = false
         paint = Paint().apply {
             isAntiAlias = true
             style = Paint.Style.STROKE
             strokeWidth = 5f
             color = Color.BLACK
         }
+        backgroundStack.clear()
+        currentBackgroundIndex = -1
         resetZoom()
         invalidate()
     }
@@ -538,10 +723,9 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         canvas.translate(posX, posY)
         canvas.scale(scaleFactor, scaleFactor)
 
-        backgroundBitmap?.let { bitmap ->
-            backgroundRect?.let { rect ->
-                canvas.drawBitmap(bitmap, null, rect, null)
-            }
+        for (imageItem in imageItems) {
+            val srcRect = Rect(0, 0, imageItem.originalWidth, imageItem.originalHeight)
+            canvas.drawBitmap(imageItem.bitmap, srcRect, imageItem.rect, null)
         }
 
         for ((p, pt) in paths) {
@@ -580,6 +764,15 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         currentTextColor = textColor
         isPixelMode = false
         geometryMode = GeometryTool.NONE
+        isEraseMode = false
+        isDrawingGeometry = false
+        isAdjustingImageMode = false
+
+        if (selectedImageIndex != -1) {
+            imageItems[selectedImageIndex].isSelected = false
+            selectedImageIndex = -1
+        }
+
         invalidate()
     }
 
@@ -589,18 +782,93 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     }
 
     fun setBackgroundImage(bitmap: Bitmap) {
+        if (isPixelMode) return // Không thêm ảnh nếu đang ở chế độ pixel
+
         if (currentBackgroundIndex < backgroundStack.size - 1) {
             backgroundStack.subList(currentBackgroundIndex + 1, backgroundStack.size).clear()
         }
 
-        backgroundStack.add(bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true))
+        val viewWidth = width.toFloat()
+        val viewHeight = height.toFloat()
+        val imageWidth = bitmap.width.toFloat()
+        val imageHeight = bitmap.height.toFloat()
+
+        val scale = min(viewWidth / imageWidth, viewHeight / imageHeight)
+        val scaledWidth = imageWidth * scale
+        val scaledHeight = imageHeight * scale
+
+        val left = (viewWidth - scaledWidth) / 2
+        val top = (viewHeight - scaledHeight) / 2
+
+        val rect = RectF(left, top, left + scaledWidth, top + scaledHeight)
+        val newBitmap = bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
+
+        backgroundStack.add(newBitmap)
         currentBackgroundIndex = backgroundStack.size - 1
-        updateCurrentBackground()
+
+        if (imageItems.isEmpty()) {
+            imageItems.add(ImageItem(newBitmap, rect, true, bitmap.width, bitmap.height, true))
+        } else {
+            imageItems[0] = ImageItem(newBitmap, rect, true, bitmap.width, bitmap.height, true)
+        }
+        selectedImageIndex = 0
+        isAdjustingImageMode = true
+        disablePixelMode() // Vô hiệu hóa chế độ pixel khi thêm ảnh
+        isEraseMode = false
+        geometryMode = GeometryTool.NONE
+        isDrawingGeometry = false
+        invalidate()
+    }
+
+    fun addImage(bitmap: Bitmap) {
+        if (isPixelMode) return // Không thêm ảnh nếu đang ở chế độ pixel
+
+        val viewWidth = width.toFloat()
+        val viewHeight = height.toFloat()
+
+        val defaultWidth = viewWidth / 4
+        val defaultHeight = (defaultWidth * bitmap.height) / bitmap.width
+
+        val left = (viewWidth - defaultWidth) / 2
+        val top = (viewHeight - defaultHeight) / 2
+
+        val rect = RectF(left, top, left + defaultWidth, top + defaultHeight)
+
+        if (selectedImageIndex != -1) {
+            imageItems[selectedImageIndex].isSelected = false
+        }
+
+        imageItems.add(ImageItem(bitmap, rect, true, bitmap.width, bitmap.height, true))
+        selectedImageIndex = imageItems.size - 1
+        isAdjustingImageMode = true
+        disablePixelMode() // Vô hiệu hóa chế độ pixel khi thêm ảnh
+        isEraseMode = false
+        geometryMode = GeometryTool.NONE
+        isDrawingGeometry = false
+        invalidate()
+    }
+
+    fun enableImageAdjustMode() {
+        isAdjustingImageMode = true
+        isPixelMode = false
+        isTextMode = false
+        geometryMode = GeometryTool.NONE
+        isEraseMode = false
+        isDrawingGeometry = false
+
+        if (selectedImageIndex != -1) {
+            imageItems[selectedImageIndex].isSelected = false
+            selectedImageIndex = -1
+        }
+
+        invalidate()
     }
 
     data class TextItem(val text: String, val x: Float, val y: Float, val paint: Paint)
 
     fun enablePixelMode(pixelSize: Int, widthInPixels: Int, heightInPixels: Int, showGrid: Boolean = true) {
+        if (imageItems.isNotEmpty()) return // Không kích hoạt pixel mode nếu có ảnh trên canvas
+
         isPixelMode = true
         this.pixelSize = pixelSize.toFloat()
         this.canvasWidthInPixels = widthInPixels
@@ -608,6 +876,15 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         this.showPixelGrid = showGrid
         isTextMode = false
         geometryMode = GeometryTool.NONE
+        isEraseMode = false
+        isDrawingGeometry = false
+        isAdjustingImageMode = false
+
+        if (selectedImageIndex != -1) {
+            imageItems[selectedImageIndex].isSelected = false
+            selectedImageIndex = -1
+        }
+
         paint.apply {
             strokeWidth = 1f
             isAntiAlias = false
@@ -632,9 +909,17 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         geometryMode = tool
         isPixelMode = false
         isTextMode = false
+        isEraseMode = false
+        isDrawingGeometry = false
+        isAdjustingImageMode = false
+
+        if (selectedImageIndex != -1) {
+            imageItems[selectedImageIndex].isSelected = false
+            selectedImageIndex = -1
+        }
+
         path.reset()
         tempPath.reset()
-        isDrawingGeometry = false
         invalidate()
     }
 
@@ -654,6 +939,74 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         }
 
         paths.add(Pair(pixelPath, Paint(paint)))
+        invalidate()
+    }
+
+    // Lưu trạng thái vẽ
+    fun saveDraft(context: Context) {
+        val sharedPrefs = context.getSharedPreferences("DrawingPrefs", Context.MODE_PRIVATE)
+        with(sharedPrefs.edit()) {
+            putInt("paintColor", paint.color)
+            putFloat("paintStrokeWidth", paint.strokeWidth)
+            putString("paintStyle", paint.style.toString())
+            putInt("backgroundColor", backgroundColor)
+            putBoolean("isPixelMode", isPixelMode)
+            putFloat("pixelSize", pixelSize)
+            putInt("canvasWidthInPixels", canvasWidthInPixels)
+            putInt("canvasHeightInPixels", canvasHeightInPixels)
+            putBoolean("showPixelGrid", showPixelGrid)
+            putBoolean("isTextMode", isTextMode)
+            putString("currentText", currentText)
+            putString("currentFontFamily", currentFontFamily)
+            putFloat("currentTextSize", currentTextSize)
+            putInt("currentTextColor", currentTextColor)
+            putFloat("scaleFactor", scaleFactor)
+            putFloat("posX", posX)
+            putFloat("posY", posY)
+            putString("geometryMode", geometryMode.name)
+            putBoolean("isEraseMode", isEraseMode)
+            apply()
+        }
+
+        // Lưu bitmap hiện tại
+        val bitmap = getBitmap()
+        val file = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "draft_${System.currentTimeMillis()}.png")
+        FileOutputStream(file).use { out ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+        }
+    }
+
+    // Khôi phục trạng thái vẽ
+    fun restoreDraft(context: Context, draftPath: String?) {
+        clear()
+        val sharedPrefs = context.getSharedPreferences("DrawingPrefs", Context.MODE_PRIVATE)
+
+        paint.color = sharedPrefs.getInt("paintColor", Color.BLACK)
+        paint.strokeWidth = sharedPrefs.getFloat("paintStrokeWidth", 5f)
+        paint.style = Paint.Style.valueOf(sharedPrefs.getString("paintStyle", Paint.Style.STROKE.toString()) ?: Paint.Style.STROKE.toString())
+        backgroundColor = sharedPrefs.getInt("backgroundColor", Color.WHITE)
+        isPixelMode = sharedPrefs.getBoolean("isPixelMode", false)
+        pixelSize = sharedPrefs.getFloat("pixelSize", 10f)
+        canvasWidthInPixels = sharedPrefs.getInt("canvasWidthInPixels", 50)
+        canvasHeightInPixels = sharedPrefs.getInt("canvasHeightInPixels", 50)
+        showPixelGrid = sharedPrefs.getBoolean("showPixelGrid", false)
+        isTextMode = sharedPrefs.getBoolean("isTextMode", false)
+        currentText = sharedPrefs.getString("currentText", null)
+        currentFontFamily = sharedPrefs.getString("currentFontFamily", "sans-serif") ?: "sans-serif"
+        currentTextSize = sharedPrefs.getFloat("currentTextSize", 24f)
+        currentTextColor = sharedPrefs.getInt("currentTextColor", Color.BLACK)
+        scaleFactor = sharedPrefs.getFloat("scaleFactor", 1.0f)
+        posX = sharedPrefs.getFloat("posX", 0f)
+        posY = sharedPrefs.getFloat("posY", 0f)
+        geometryMode = GeometryTool.valueOf(sharedPrefs.getString("geometryMode", GeometryTool.NONE.name) ?: GeometryTool.NONE.name)
+        isEraseMode = sharedPrefs.getBoolean("isEraseMode", false)
+
+        // Khôi phục bitmap
+        draftPath?.let {
+            val bitmap = BitmapFactory.decodeFile(it)
+            setBackgroundImage(bitmap)
+        }
+
         invalidate()
     }
 }

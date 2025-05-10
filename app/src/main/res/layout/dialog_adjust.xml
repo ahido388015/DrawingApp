@@ -38,10 +38,13 @@
         android:text="Màu nền"
         android:textStyle="bold" />
 
-    <Button
+    <ImageButton
         android:id="@+id/backgroundButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Chọn màu nền" />
+        android:layout_marginTop="5dp"
+        android:background="@drawable/bg_dialog_pixels_setting"
+        android:src="@drawable/color"
+         />
 
 </LinearLayout>
