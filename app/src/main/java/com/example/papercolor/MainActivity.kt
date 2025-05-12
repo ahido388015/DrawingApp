@@ -119,6 +119,16 @@ class MainActivity : AppCompatActivity() {
                 viewModel.currentBrush.value = "ink"
                 dialog.dismiss()
             }
+            dialogView.findViewById<LinearLayout>(R.id.brush_fountain_ink).setOnClickListener {
+                binding.drawingView.disableTextMode()
+                viewModel.currentBrush.value = "fountain_pen"
+                dialog.dismiss()
+            }
+            dialogView.findViewById<LinearLayout>(R.id.brush_brush).setOnClickListener {
+                binding.drawingView.disableTextMode()
+                viewModel.currentBrush.value = "brush"
+                dialog.dismiss()
+            }
             dialogView.findViewById<Button>(R.id.cancel_button).setOnClickListener {
                 dialog.dismiss()
             }

@@ -8,24 +8,44 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Tạo tranh mới"
+        android:text="Create New Drawing"
         android:textSize="18sp"
         android:textStyle="bold"
         android:layout_marginBottom="8dp" />
 
-    <ImageView
-        android:id="@+id/imageViewNewPaper"
+    <!-- Frame with background paper and plus icon -->
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:src="@drawable/new_paper"
-        android:contentDescription="New Paper"
-        android:scaleType="centerCrop"
-        android:layout_marginBottom="16dp" />
+        android:layout_height="120dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp">
+
+        <!-- Background paper image -->
+        <ImageView
+            android:id="@+id/imageViewPaperBackground"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/paper_background"
+            android:contentDescription="Paper Background"
+            android:scaleType="centerCrop"
+            android:background="@drawable/bg_splash" />
+
+        <!-- Plus icon on top -->
+        <ImageView
+            android:id="@+id/imageViewNewPaper"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_gravity="center"
+            android:src="@drawable/new_paper"
+            android:contentDescription="Add New Drawing"
+            android:background="?android:selectableItemBackgroundBorderless"
+            android:padding="8dp" />
+    </FrameLayout>
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Tranh đã lưu"
+        android:text="Saved Drawings"
         android:textSize="18sp"
         android:textStyle="bold"
         android:layout_marginBottom="8dp" />

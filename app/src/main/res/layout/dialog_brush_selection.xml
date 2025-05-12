@@ -25,6 +25,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="8dp"
+        android:layout_marginLeft="20dp"
         android:background="?attr/selectableItemBackground"
         android:clickable="true"
         android:focusable="true">
@@ -47,6 +48,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:layout_marginLeft="20dp"
         android:padding="8dp"
         android:background="?attr/selectableItemBackground"
         android:clickable="true"
@@ -71,6 +73,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="8dp"
+        android:layout_marginLeft="20dp"
         android:background="?attr/selectableItemBackground"
         android:clickable="true"
         android:focusable="true">
@@ -94,6 +97,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="8dp"
+        android:layout_marginLeft="20dp"
         android:background="?attr/selectableItemBackground"
         android:clickable="true"
         android:focusable="true">
@@ -106,6 +110,54 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Ink"
+            android:textSize="16sp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="16dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/brush_fountain_ink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:layout_marginLeft="20dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_brush_wool"
+            android:contentDescription="Ink" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Wool"
+            android:textSize="16sp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="16dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/brush_brush"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:layout_marginLeft="20dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_brush_ink"
+            android:contentDescription="Ink" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Brush"
             android:textSize="16sp"
             android:layout_gravity="center_vertical"
             android:layout_marginStart="16dp" />

@@ -599,12 +599,69 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                 paint.strokeWidth = 2f
                 paint.style = Paint.Style.STROKE
             }
+//            "fountain_pen" -> {
+//                paint.strokeWidth = 6f
+//                paint.style = Paint.Style.STROKE
+//                paint.strokeCap = Paint.Cap.ROUND
+//                paint.strokeJoin = Paint.Join.ROUND
+//                paint.alpha = 200 // Giảm alpha để tạo hiệu ứng mực loang nhẹ
+//                paint.shader = null // Bỏ shader để dùng màu từ paint.color
+//                paint.maskFilter = BlurMaskFilter(2f, BlurMaskFilter.Blur.NORMAL)
+//                paint.pathEffect = ComposePathEffect(
+//                    CornerPathEffect(5f),
+//                    PathDashPathEffect(
+//                        createPressurePath(),
+//                        10f,
+//                        0f,
+//                        PathDashPathEffect.Style.ROTATE
+//                    )
+//                )
+//            }
+            "fountain_pen" -> {
+                paint.strokeWidth = 6f
+                paint.style = Paint.Style.STROKE
+                paint.strokeCap = Paint.Cap.ROUND
+                paint.strokeJoin = Paint.Join.ROUND
+                paint.alpha = 200
+                paint.shader = null
+                paint.maskFilter = BlurMaskFilter(1.5f, BlurMaskFilter.Blur.NORMAL)
+                paint.pathEffect = ComposePathEffect(
+                    CornerPathEffect(5f),
+                    PathDashPathEffect(
+                        createPressurePath(),
+                        5f,
+                        0f,
+                        PathDashPathEffect.Style.ROTATE
+                    )
+                )
+            }
+            "brush" -> {
+                paint.strokeWidth = 30f // Tăng độ rộng để giống cọ hơn
+                paint.style = Paint.Style.STROKE
+                paint.strokeCap = Paint.Cap.ROUND
+                paint.strokeJoin = Paint.Join.ROUND
+                paint.alpha = 100 // Giảm alpha để tạo độ trong suốt, giống màu nước
+                paint.shader = null // Đảm bảo dùng màu từ paint.color
+                paint.maskFilter = BlurMaskFilter(8f, BlurMaskFilter.Blur.NORMAL) // Tăng độ mờ để loang mạnh hơn
+                // Điều chỉnh pathEffect để tạo hiệu ứng loang tự nhiên, bớt cứng
+                paint.pathEffect = ComposePathEffect(
+                    CornerPathEffect(20f), // Làm mềm góc hơn nữa
+                    DiscretePathEffect(25f, 3f) // Tăng segment length, giảm deviation để loang tự nhiên
+                )
+            }
         }
         isEraseMode = false // Tắt chế độ xóa khi thay đổi kiểu bút
         geometryMode = GeometryTool.NONE // Tắt chế độ hình học khi thay đổi kiểu bút
         tempPath.reset()
         isDrawingGeometry = false
         isAdjustingImageMode = false // Tắt chế độ điều chỉnh ảnh
+    }
+    private fun createPressurePath(): Path {
+        val path = Path()
+        path.moveTo(0f, 0f)
+        path.lineTo(5f, 5f)
+        path.lineTo(10f, 2f)
+        return path
     }
 
     fun erase() {
