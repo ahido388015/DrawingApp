@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:minWidth="250dp"
+    android:background="@drawable/dialog_background"
+    android:layout_margin="16dp">
+
+    <TextView
+        android:id="@+id/templateTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Choose Background Template"
+        android:textColor="@color/light3_green"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:paddingBottom="8dp" />
+
+    <!-- Template items -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Template Item 1 -->
+        <LinearLayout
+            android:id="@+id/whiteTemplate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_button"
+            android:padding="10dp"
+            android:layout_marginBottom="10dp">
+
+            <ImageView
+                android:id="@+id/whiteTemplateImage"
+                android:layout_width="80dp"
+                android:layout_height="30dp"
+                android:background="@drawable/image_background"
+                android:src="@color/white"
+                android:scaleType="centerCrop" />
+
+            <TextView
+                android:id="@+id/whiteTemplateText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Blank Paper"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:paddingStart="16dp" />
+        </LinearLayout>
+
+        <!-- Template Item 2 -->
+        <LinearLayout
+            android:id="@+id/linedTemplate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_button"
+            android:padding="10dp"
+            android:layout_marginBottom="10dp">
+
+            <ImageView
+                android:id="@+id/linedTemplateImage"
+                android:layout_width="80dp"
+                android:layout_height="30dp"
+                android:background="@drawable/image_background"
+                android:src="@drawable/ic_temp_lined"
+                android:scaleType="centerCrop" />
+
+            <TextView
+                android:id="@+id/linedTemplateText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Lined Paper"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:layout_gravity="center"
+                android:paddingStart="16dp" />
+        </LinearLayout>
+
+        <!-- Template Item 3 -->
+        <LinearLayout
+            android:id="@+id/gridTemplate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_button"
+            android:padding="10dp"
+            android:layout_marginBottom="10dp">
+
+            <ImageView
+                android:id="@+id/gridTemplateImage"
+                android:layout_width="80dp"
+                android:layout_height="30dp"
+                android:background="@drawable/image_background"
+                android:src="@drawable/ic_temp_grid"
+                android:scaleType="centerCrop" />
+
+            <TextView
+                android:id="@+id/gridTemplateText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Grid Paper"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:layout_gravity="center"
+                android:paddingStart="16dp" />
+        </LinearLayout>
+
+        <!-- Template Item 4 -->
+        <LinearLayout
+            android:id="@+id/dottedTemplate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_button"
+            android:padding="10dp"
+            android:layout_marginBottom="10dp">
+
+            <ImageView
+                android:id="@+id/dottedTemplateImage"
+                android:layout_width="80dp"
+                android:layout_height="30dp"
+                android:background="@drawable/image_background"
+                android:src="@drawable/paper_background"
+                android:scaleType="centerCrop" />
+
+            <TextView
+                android:id="@+id/dottedTemplateText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dotted Paper"
+                android:textSize="14sp"
+                android:textColor="@color/white"
+                android:layout_gravity="center"
+                android:paddingStart="16dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Close button -->
+    <Button
+        android:id="@+id/btnCloseDialog"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:text="Close"
+        android:textSize="12sp"
+        android:textColor="@color/light3_green"
+        android:background="@drawable/bg_button_in_dialog"
+        app:backgroundTint="@null"
+        android:layout_marginTop="8dp"
+        android:layout_gravity="end" />
+</LinearLayout>

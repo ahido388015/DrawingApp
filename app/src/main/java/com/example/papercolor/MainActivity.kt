@@ -1,48 +1,33 @@
 package com.example.papercolor
 
-import android.Manifest
 import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.ColorMatrix
-import android.graphics.ColorMatrixColorFilter
-import android.graphics.Paint
-import android.media.MediaScannerConnection
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.Environment
-import android.provider.MediaStore
 import android.text.Editable
-import android.view.LayoutInflater
-import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.LinearLayout
-import android.widget.SeekBar
-import android.widget.Spinner
-import android.widget.Toast
-import androidx.activity.viewModels
+import android.view.View
+import android.view.Window
+import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.papercolor.adapter.ColorAdapter
 import com.example.papercolor.databinding.ActivityMainBinding
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.skydoves.colorpickerview.ColorPickerDialog
 import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
-import java.io.File
-import java.io.FileOutputStream
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var viewModel: DrawingViewModel
-    private val STORAGE_PERMISSION_CODE = 101
-    private val PICK_IMAGE_REQUEST = 102
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,109 +36,123 @@ class MainActivity : AppCompatActivity() {
 
         viewModel = ViewModelProvider(this).get(DrawingViewModel::class.java)
 
-        // Kiểm tra nếu mở tranh từ SplashActivity
+        // Khôi phục bản nháp nếu có
         val drawingPath = intent.getStringExtra("DRAWING_PATH")
         if (drawingPath != null) {
-            binding.drawingView.restoreDraft(this, drawingPath)
-        }
-
-        viewModel.currentColor.observe(this) { color ->
-            binding.drawingView.setColor(color)
-        }
-        viewModel.currentBrush.observe(this) { brush ->
-            binding.drawingView.setBrushStyle(brush)
+            viewModel.restoreDraft(this, drawingPath, binding.drawingView)
         }
 
         binding.colorButton.setOnClickListener {
-            ColorPickerDialog.Builder(this)
-                .setTitle("Chọn màu")
+            isGeometryToolActive = false
+            binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
+            binding.colorButton.setImageResource(R.drawable.ic_color_red)
+            binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
+
+            ColorPickerDialog.Builder(this, R.style.CustomDialogTheme)
+                .setTitle("Selected Color")
                 .setPositiveButton("OK", ColorEnvelopeListener { envelope, _ ->
-                    viewModel.currentColor.value = envelope.color
+                    viewModel.setColor(envelope.color, binding.drawingView)
+                    binding.colorButton.setImageResource(R.drawable.ic_color_gray)
                 })
-                .setNegativeButton("Hủy") { dialog, _ -> dialog.dismiss() }
+                .setNegativeButton("Cancel") { dialog, _ ->
+                    dialog.dismiss()
+                    binding.colorButton.setImageResource(R.drawable.ic_color_gray)
+                }
                 .attachAlphaSlideBar(true)
                 .attachBrightnessSlideBar(true)
                 .show()
         }
 
-//        binding.brushButton.setOnClickListener {
-//            val brushOptions = arrayOf("Marker", "Feather", "Pencil", "Ink")
-//            AlertDialog.Builder(this)
-//                .setTitle("Chọn kiểu bút")
-//                .setItems(brushOptions) { _, which ->
-//                    binding.drawingView.disableTextMode()
-//                    when (which) {
-//                        0 -> viewModel.currentBrush.value = "marker"
-//                        1 -> viewModel.currentBrush.value = "feather"
-//                        2 -> viewModel.currentBrush.value = "pencil"
-//                        3 -> viewModel.currentBrush.value = "ink"
-//                    }
-//                }
-//                .setNegativeButton("Hủy") { dialog, _ -> dialog.dismiss() }
-//                .show()
-//        }
 
         binding.brushButton.setOnClickListener {
+            isGeometryToolActive = false
+            binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
+            binding.brushButton.setImageResource(R.drawable.ic_brush_green)
+            binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
+
             val dialogView = layoutInflater.inflate(R.layout.dialog_brush_selection, null)
             val dialog = Dialog(this)
             dialog.setContentView(dialogView)
             dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
             dialogView.findViewById<LinearLayout>(R.id.brush_marker).setOnClickListener {
-                binding.drawingView.disableTextMode()
-                viewModel.currentBrush.value = "marker"
+                viewModel.setBrushStyle("marker", binding.drawingView)
                 dialog.dismiss()
+                binding.brushButton.setImageResource(R.drawable.ic_brush_gray) // đổi về xám
             }
             dialogView.findViewById<LinearLayout>(R.id.brush_feather).setOnClickListener {
-                binding.drawingView.disableTextMode()
-                viewModel.currentBrush.value = "feather"
+                viewModel.setBrushStyle("feather", binding.drawingView)
                 dialog.dismiss()
+                binding.brushButton.setImageResource(R.drawable.ic_brush_gray)
             }
             dialogView.findViewById<LinearLayout>(R.id.brush_pencil).setOnClickListener {
-                binding.drawingView.disableTextMode()
-                viewModel.currentBrush.value = "pencil"
+                viewModel.setBrushStyle("pencil", binding.drawingView)
                 dialog.dismiss()
+                binding.brushButton.setImageResource(R.drawable.ic_brush_gray)
             }
             dialogView.findViewById<LinearLayout>(R.id.brush_ink).setOnClickListener {
-                binding.drawingView.disableTextMode()
-                viewModel.currentBrush.value = "ink"
+                viewModel.setBrushStyle("ink", binding.drawingView)
                 dialog.dismiss()
+                binding.brushButton.setImageResource(R.drawable.ic_brush_gray)
             }
             dialogView.findViewById<LinearLayout>(R.id.brush_fountain_ink).setOnClickListener {
-                binding.drawingView.disableTextMode()
-                viewModel.currentBrush.value = "fountain_pen"
+                viewModel.setBrushStyle("fountain_pen", binding.drawingView)
                 dialog.dismiss()
+                binding.brushButton.setImageResource(R.drawable.ic_brush_gray)
             }
-            dialogView.findViewById<LinearLayout>(R.id.brush_brush).setOnClickListener {
-                binding.drawingView.disableTextMode()
-                viewModel.currentBrush.value = "brush"
+            dialogView.findViewById<LinearLayout>(R.id.brush_magic).setOnClickListener {
+                viewModel.setBrushStyle("magicBrush", binding.drawingView)
                 dialog.dismiss()
-            }
-            dialogView.findViewById<Button>(R.id.cancel_button).setOnClickListener {
-                dialog.dismiss()
+                binding.brushButton.setImageResource(R.drawable.ic_brush_gray)
             }
 
+//            dialogView.findViewById<LinearLayout>(R.id.brush_brush).setOnClickListener {
+//                viewModel.setBrushStyle("brush", binding.drawingView)
+//                dialog.dismiss()
+//                binding.brushButton.setImageResource(R.drawable.ic_brush_gray)
+//            }
+            dialogView.findViewById<Button>(R.id.cancel_button).setOnClickListener {
+                dialog.dismiss()
+                binding.brushButton.setImageResource(R.drawable.ic_brush_gray)
+            }
+            dialog.setOnDismissListener {
+                binding.brushButton.setImageResource(R.drawable.ic_brush_gray)
+            }
             dialog.show()
         }
 
+
         binding.eraseButton.setOnClickListener {
-            binding.drawingView.erase()
+            isGeometryToolActive = false
+            binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
+            binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
+            val isErasing = viewModel.toggleErase(binding.drawingView)
+
+            if (isErasing) {
+                binding.eraseButton.setImageResource(R.drawable.ic_erasers_green)
+            } else {
+                binding.eraseButton.setImageResource(R.drawable.ic_erasers_gray)
+            }
         }
 
+
         binding.undoButton.setOnClickListener {
-            if (!binding.drawingView.undo()) {
-                binding.drawingView.undoBackground()
-            }
+            viewModel.undo(binding.drawingView)
         }
 
         binding.redoButton.setOnClickListener {
-            if (!binding.drawingView.redo()) {
-                binding.drawingView.redoBackground()
-            }
+            viewModel.redo(binding.drawingView)
         }
 
         binding.cancelButton.setOnClickListener {
-            binding.drawingView.clear()
+            isGeometryToolActive = false
+            binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
+            binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
+            viewModel.clear(binding.drawingView)
+            if (viewModel.isPixelModeEnabled.value == true) {
+                viewModel.isPixelModeEnabled.value = false
+                binding.pixelButton.setImageResource(R.drawable.ic_pixelmode_green)
+            }
         }
 
         binding.saveButton.setOnClickListener {
@@ -181,169 +180,230 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.pixelButton.setOnClickListener {
-            showPixelSettingsDialog()
+            if (viewModel.isPixelModeEnabled.value == true) {
+                viewModel.disablePixelMode(binding.drawingView)
+                viewModel.isPixelModeEnabled.value = false
+                binding.pixelButton.setImageResource(R.drawable.ic_pixelmode_green)
+            } else {
+                showPixelSettingsDialog()
+            }
+        }
+
+        binding.templateButton.setOnClickListener {
+            showTemplateSelectionDialog()
         }
     }
 
     override fun onPause() {
         super.onPause()
-        // Lưu trạng thái vẽ khi ứng dụng bị tạm dừng
-        binding.drawingView.saveDraft(this)
+        viewModel.saveDraft(this, binding.drawingView)
     }
 
     private fun checkPermission(): Boolean {
-        val result = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        return result == PackageManager.PERMISSION_GRANTED
+        return ContextCompat.checkSelfPermission(
+            this,
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun requestPermission() {
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+        requestPermissions(
+            arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
             STORAGE_PERMISSION_CODE
         )
     }
 
+//    private fun showEraseSizeDialog(onSizeSelected: (Float) -> Unit) {
+//        val dialog = BottomSheetDialog(this)
+//        val view = layoutInflater.inflate(R.layout.dialog_erase_size, null)
+//        dialog.setContentView(view)
+//
+//        // Ánh xạ các view kích thước
+//        val size10 = view.findViewById<View>(R.id.btn_size_10)
+//        val size20 = view.findViewById<View>(R.id.btn_size_20)
+//        val size30 = view.findViewById<View>(R.id.btn_size_30)
+//        val size40 = view.findViewById<View>(R.id.btn_size_40)
+//
+//        // Xử lý sự kiện click cho từng kích thước
+//        size10.setOnClickListener {
+//            onSizeSelected(10f)
+//            dialog.dismiss()
+//        }
+//        size20.setOnClickListener {
+//            onSizeSelected(20f)
+//            dialog.dismiss()
+//        }
+//        size30.setOnClickListener {
+//            onSizeSelected(30f)
+//            dialog.dismiss()
+//        }
+//        size40.setOnClickListener {
+//            onSizeSelected(40f)
+//            dialog.dismiss()
+//        }
+//        dialog.show()
+//    }
+
     private fun showTextInputDialog() {
+        isGeometryToolActive = false
+        binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
+        binding.textButton.setImageResource(R.drawable.ic_textmode_green)
+        binding.pixelButton.setImageResource(R.drawable.ic_pixelmode_green)
+
         val dialogView = layoutInflater.inflate(R.layout.dialog_text_input, null)
+
         val editText = dialogView.findViewById<EditText>(R.id.editTextInput)
         val fontSpinner = dialogView.findViewById<Spinner>(R.id.fontSpinner)
         val sizeSeekBar = dialogView.findViewById<SeekBar>(R.id.sizeSeekBar)
+        val buttonOk = dialogView.findViewById<Button>(R.id.buttonOk)
+        val buttonCancel = dialogView.findViewById<Button>(R.id.buttonCancel)
 
         val fonts = listOf("sans-serif", "monospace", "serif")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, fonts)
-       // adapter.setDropDown gViewResource(android.R.layout.simple_spinner_dropdown_item)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         fontSpinner.adapter = adapter
 
-        AlertDialog.Builder(this)
-            .setTitle("Nhập chữ")
-            .setView(dialogView)
-            .setPositiveButton("OK") { _, _ ->
-                val inputText = editText.text.toString()
-                val selectedFont = fonts[fontSpinner.selectedItemPosition]
-                val selectedSize = sizeSeekBar.progress
+        // Use Dialog instead of AlertDialog
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(dialogView)
+        dialog.setCancelable(true)
 
-                if (inputText.isNotBlank()) {
-                    binding.drawingView.enableTextMode(
-                        text = inputText,
-                        fontFamily = selectedFont,
-                        textSize = selectedSize.toFloat()
-                    )
-                }
-            }
-            .setNegativeButton("Hủy") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .show()
-    }
+        // Apply rounded corners via dialog_background
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
-    private fun saveDrawing() {
-        val bitmap = binding.drawingView.getBitmap()
-        val file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "drawing_${System.currentTimeMillis()}.png")
+        buttonOk.setOnClickListener {
+            val inputText = editText.text.toString()
+            val selectedFont = fonts[fontSpinner.selectedItemPosition]
+            val selectedSize = sizeSeekBar.progress.toFloat().coerceIn(12f, 100f)
 
-        try {
-            FileOutputStream(file).use { out ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-                Toast.makeText(
-                    this,
-                    "Đã lưu ảnh thành công:\n${file.absolutePath}",
-                    Toast.LENGTH_LONG
-                ).show()
-
-                MediaStore.Images.Media.insertImage(
-                    contentResolver,
-                    file.absolutePath,
-                    file.name,
-                    "Drawing"
+            if (inputText.isNotBlank()) {
+                viewModel.enableTextMode(
+                    inputText,
+                    selectedFont,
+                    selectedSize,
+                    viewModel.currentColor.value ?: Color.BLACK,
+                    binding.drawingView
                 )
+            } else {
+                binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
             }
-        } catch (e: Exception) {
-            Toast.makeText(this, "Lỗi khi lưu ảnh: ${e.message}", Toast.LENGTH_SHORT).show()
-            e.printStackTrace()
+            dialog.dismiss()
         }
+
+        buttonCancel.setOnClickListener {
+            binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
+            dialog.dismiss()
+        }
+
+        dialog.setOnCancelListener {
+            binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
+        }
+
+        dialog.show()
     }
 
-    private fun adjustBrightnessContrast(bitmap: Bitmap, brightness: Float, contrast: Float): Bitmap {
-        val cm = ColorMatrix().apply {
-            set(floatArrayOf(
-                contrast, 0f, 0f, 0f, brightness,
-                0f, contrast, 0f, 0f, brightness,
-                0f, 0f, contrast, 0f, brightness,
-                0f, 0f, 0f, 1f, 0f
-            ))
-        }
-
-        val paint = Paint().apply {
-            colorFilter = ColorMatrixColorFilter(cm)
-        }
-
-        val config = bitmap.config ?: Bitmap.Config.ARGB_8888
-        val adjustedBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, config)
-        val canvas = Canvas(adjustedBitmap)
-        canvas.drawBitmap(bitmap, 0f, 0f, paint)
-        return adjustedBitmap
-    }
 
     private fun showAdjustDialog() {
+        isGeometryToolActive = false
+        binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
+        binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
+        binding.pixelButton.setImageResource(R.drawable.ic_pixelmode_green)
+        binding.saveButton.setImageResource(R.drawable.ic_save_red)
+
         val dialogView = layoutInflater.inflate(R.layout.dialog_adjust, null)
+
+        // Use Dialog instead of AlertDialog
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(dialogView)
+        dialog.setCancelable(true)
+
+        // Make dialog background transparent to show rounded corners from background drawable
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
         val brightnessSeekBar = dialogView.findViewById<SeekBar>(R.id.brightnessSeekBar)
         val contrastSeekBar = dialogView.findViewById<SeekBar>(R.id.contrastSeekBar)
         val backgroundButton = dialogView.findViewById<ImageButton>(R.id.backgroundButton)
+        val exportImagesCheckBox = dialogView.findViewById<CheckBox>(R.id.exportImagesCheckBox)
+        val okButton = dialogView.findViewById<Button>(R.id.okButton)
+        val cancelButton = dialogView.findViewById<Button>(R.id.cancelButton)
 
-        var selectedBackgroundColor = binding.drawingView.getCurrentBackgroundColor()
+        var selectedBackgroundColor = viewModel.backgroundColor.value ?: Color.BLACK
 
         backgroundButton.setOnClickListener {
-            ColorPickerDialog.Builder(this)
-                .setTitle("Chọn màu nền")
+            ColorPickerDialog.Builder(this, R.style.CustomDialogTheme)
+                .setTitle("Set Background Color")
                 .setPositiveButton("OK", ColorEnvelopeListener { envelope, _ ->
                     selectedBackgroundColor = envelope.color
-                    Toast.makeText(this, "Đã chọn màu nền", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Selected background color", Toast.LENGTH_SHORT).show()
                 })
-                .setNegativeButton("Hủy") { dialog, _ ->
-                    dialog.dismiss()
+                .setNegativeButton("Close") { cpDialog, _ ->
+                    cpDialog.dismiss()
                 }
                 .attachAlphaSlideBar(true)
                 .attachBrightnessSlideBar(true)
                 .show()
         }
 
-        AlertDialog.Builder(this)
-            .setTitle("Điều chỉnh và lưu ảnh")
-            .setView(dialogView)
-            .setPositiveButton("OK") { _, _ ->
-                val brightness = brightnessSeekBar.progress - 100f
-                val contrast = contrastSeekBar.progress / 100f
+        okButton.setOnClickListener {
+            val brightness = brightnessSeekBar.progress - 100f
+            val contrast = contrastSeekBar.progress / 100f
+            val exportImages = exportImagesCheckBox.isChecked
 
-                binding.drawingView.setCanvasBackgroundColor(selectedBackgroundColor)
+            viewModel.setCanvasBackgroundColor(selectedBackgroundColor, binding.drawingView)
+            val originalBitmap = viewModel.getBitmap(binding.drawingView, exportImages)
+            val adjusted = viewModel.adjustBrightnessContrast(originalBitmap, brightness, contrast)
+            viewModel.saveDrawing(this, adjusted)
 
-                val originalBitmap = binding.drawingView.getBitmap()
-                val adjusted = adjustBrightnessContrast(originalBitmap, brightness, contrast)
+            binding.saveButton.setImageResource(R.drawable.ic_save_green)
+            dialog.dismiss()
+        }
 
-                saveDrawing()
-            }
-            .setNegativeButton("HỦY", null)
-            .show()
+        cancelButton.setOnClickListener {
+            binding.saveButton.setImageResource(R.drawable.ic_save_green)
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
+
+    //kiem tra quyen
     private fun checkStoragePermission(): Boolean {
         return ContextCompat.checkSelfPermission(
             this,
-            Manifest.permission.READ_EXTERNAL_STORAGE
+            android.Manifest.permission.READ_EXTERNAL_STORAGE
         ) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun requestStoragePermission() {
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+        requestPermissions(
+            arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE),
             PICK_IMAGE_REQUEST
         )
+    }
+
+    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK && result.data != null) {
+            val uri: Uri? = result.data?.data
+            try {
+                uri?.let {
+                    val inputStream = contentResolver.openInputStream(uri)
+                    val bitmap = BitmapFactory.decodeStream(inputStream)
+                    viewModel.addImage(bitmap, binding.drawingView)
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error loading image", Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
+            }
+        }
     }
 
     private fun openGallery() {
         val intent = Intent(Intent.ACTION_PICK)
         intent.type = "image/*"
-        startActivityForResult(intent, PICK_IMAGE_REQUEST)
+        pickImageLauncher.launch(intent)
     }
 
     override fun onRequestPermissionsResult(
@@ -355,7 +415,7 @@ class MainActivity : AppCompatActivity() {
         when (requestCode) {
             STORAGE_PERMISSION_CODE -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    saveDrawing()
+                    showAdjustDialog()
                 } else {
                     Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show()
                 }
@@ -370,87 +430,128 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null) {
-            val uri: Uri? = data.data
-            try {
-                uri?.let {
-                    val inputStream = contentResolver.openInputStream(uri)
-                    val bitmap = BitmapFactory.decodeStream(inputStream)
-                    binding.drawingView.setBackgroundImage(bitmap)
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this, "Lỗi khi tải ảnh", Toast.LENGTH_SHORT).show()
-                e.printStackTrace()
-            }
-        }
-    }
-
-//    private fun showGeometryToolDialog() {
-//        val geometryOptions = arrayOf("Đường thẳng", "Hình chữ nhật", "Hình tròn", "Hình tam giác", "Tắt công cụ")
-//        AlertDialog.Builder(this)
-//            .setTitle("Chọn công cụ hình học")
-//            .setItems(geometryOptions) { _, which ->
-//                when (which) {
-//                    0 -> {
-//                        binding.drawingView.setGeometryTool(DrawingView.GeometryTool.LINE)
-//                        Toast.makeText(this, "Chọn Đường thẳng", Toast.LENGTH_SHORT).show()
-//                    }
-//                    1 -> {
-//                        binding.drawingView.setGeometryTool(DrawingView.GeometryTool.RECTANGLE)
-//                        Toast.makeText(this, "Chọn Hình chữ nhật", Toast.LENGTH_SHORT).show()
-//                    }
-//                    2 -> {
-//                        binding.drawingView.setGeometryTool(DrawingView.GeometryTool.CIRCLE)
-//                        Toast.makeText(this, "Chọn Hình tròn", Toast.LENGTH_SHORT).show()
-//                    }
-//                    3 -> {
-//                        binding.drawingView.setGeometryTool(DrawingView.GeometryTool.TRIANGLE)
-//                        Toast.makeText(this, "Chọn Hình tam giác", Toast.LENGTH_SHORT).show()
-//                    }
-//                    4 -> {
-//                        binding.drawingView.disableGeometryMode()
-//                        Toast.makeText(this, "Tắt công cụ hình học", Toast.LENGTH_SHORT).show()
-//                    }
-//                }
-//            }
-//            .setNegativeButton("Hủy") { dialog, _ -> dialog.dismiss() }
-//            .show()
-//    }
-
+    private var isGeometryToolActive = false
     private fun showGeometryToolDialog() {
+        binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
+        binding.pixelButton.setImageResource(R.drawable.ic_pixelmode_green)
+        if (!isGeometryToolActive) {
+            binding.geometryButton.setImageResource(R.drawable.ic_geometry_green)
+        }
+
         val dialogView = layoutInflater.inflate(R.layout.dialog_geometry_selection, null)
         val dialog = Dialog(this)
         dialog.setContentView(dialogView)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
+        fun dismissDialogWithResetIcon(shouldResetIcon: Boolean = false) {
+            if (shouldResetIcon) {
+                isGeometryToolActive = false
+                binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
+            }
+            dialog.dismiss()
+        }
+
         dialogView.findViewById<LinearLayout>(R.id.geometry_line).setOnClickListener {
-            binding.drawingView.setGeometryTool(DrawingView.GeometryTool.LINE)
+            viewModel.setGeometryTool(DrawingView.GeometryTool.LINE, binding.drawingView)
+            isGeometryToolActive = true
             Toast.makeText(this, "Line Mode", Toast.LENGTH_SHORT).show()
-            dialog.dismiss()
+            dismissDialogWithResetIcon(false)
         }
+
         dialogView.findViewById<LinearLayout>(R.id.geometry_rectangle).setOnClickListener {
-            binding.drawingView.setGeometryTool(DrawingView.GeometryTool.RECTANGLE)
+            viewModel.setGeometryTool(DrawingView.GeometryTool.RECTANGLE, binding.drawingView)
+            isGeometryToolActive = true
             Toast.makeText(this, "Rectangle Mode", Toast.LENGTH_SHORT).show()
-            dialog.dismiss()
+            dismissDialogWithResetIcon(false)
         }
+
         dialogView.findViewById<LinearLayout>(R.id.geometry_circle).setOnClickListener {
-            binding.drawingView.setGeometryTool(DrawingView.GeometryTool.CIRCLE)
+            viewModel.setGeometryTool(DrawingView.GeometryTool.CIRCLE, binding.drawingView)
+            isGeometryToolActive = true
             Toast.makeText(this, "Circle Mode", Toast.LENGTH_SHORT).show()
-            dialog.dismiss()
+            dismissDialogWithResetIcon(false)
         }
+
         dialogView.findViewById<LinearLayout>(R.id.geometry_triangle).setOnClickListener {
-            binding.drawingView.setGeometryTool(DrawingView.GeometryTool.TRIANGLE)
+            viewModel.setGeometryTool(DrawingView.GeometryTool.TRIANGLE, binding.drawingView)
+            isGeometryToolActive = true
             Toast.makeText(this, "Triangle Mode", Toast.LENGTH_SHORT).show()
+            dismissDialogWithResetIcon(false)
+        }
+
+//        dialogView.findViewById<LinearLayout>(R.id.geometry_disable).setOnClickListener {
+//            viewModel.disableGeometryMode(binding.drawingView)
+//            Toast.makeText(this, "Turn Off Geometry Tool", Toast.LENGTH_SHORT).show()
+//            dismissDialogWithResetIcon(true)
+//        }
+
+        dialogView.findViewById<Button>(R.id.cancel_button).setOnClickListener {
+            // Cancel không thay đổi trạng thái icon
+            dismissDialogWithResetIcon(false)
+        }
+
+        dialog.setOnCancelListener {
+            // Cancel bằng nút back, cũng không thay đổi icon
+            if (!isGeometryToolActive) {
+                binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
+            }
+        }
+
+        dialog.show()
+    }
+
+
+
+    private fun showPixelSettingsDialog() {
+        binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
+        isGeometryToolActive = false
+        binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
+
+        val dialogView = layoutInflater.inflate(R.layout.dialog_pixel_settings, null)
+        val dialog = Dialog(this)
+        dialog.setContentView(dialogView)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        val widthInput = dialogView.findViewById<EditText>(R.id.etWidth)
+        val heightInput = dialogView.findViewById<EditText>(R.id.etHeight)
+        val sizeInput = dialogView.findViewById<EditText>(R.id.etPixelSize)
+        val gridCheckbox = dialogView.findViewById<CheckBox>(R.id.cbShowGrid)
+
+        widthInput.setText("50")
+        heightInput.setText("50")
+        sizeInput.setText("15")
+
+        val okButton = dialogView.findViewById<Button>(R.id.ok_button)
+        okButton.isEnabled = true
+
+        val textWatcher = object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                val widthValid = widthInput.text.toString().toIntOrNull()?.let { it >= 10 } ?: false
+                val heightValid = heightInput.text.toString().toIntOrNull()?.let { it >= 10 } ?: false
+                val sizeValid = sizeInput.text.toString().toIntOrNull()?.let { it >= 10 } ?: false
+                okButton.isEnabled = widthValid && heightValid && sizeValid
+            }
+        }
+
+        widthInput.addTextChangedListener(textWatcher)
+        heightInput.addTextChangedListener(textWatcher)
+        sizeInput.addTextChangedListener(textWatcher)
+
+        okButton.setOnClickListener {
+            val width = (widthInput.text.toString().toIntOrNull() ?: 50).coerceAtLeast(10)
+            val height = (heightInput.text.toString().toIntOrNull() ?: 50).coerceAtLeast(10)
+            val size = (sizeInput.text.toString().toIntOrNull() ?: 10).coerceAtLeast(10)
+
+            viewModel.enablePixelMode(size, width, height, gridCheckbox.isChecked, binding.drawingView)
+            viewModel.isPixelModeEnabled.value = true
+            binding.pixelButton.setImageResource(R.drawable.ic_pixelmode_red)
+
             dialog.dismiss()
         }
-        dialogView.findViewById<LinearLayout>(R.id.geometry_disable).setOnClickListener {
-            binding.drawingView.disableGeometryMode()
-            Toast.makeText(this, "Turn Off Geometry Tool", Toast.LENGTH_SHORT).show()
-            dialog.dismiss()
-        }
+
+
         dialogView.findViewById<Button>(R.id.cancel_button).setOnClickListener {
             dialog.dismiss()
         }
@@ -458,100 +559,54 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-//    fun showPixelSettingsDialog() {
-//        val dialogView = layoutInflater.inflate(R.layout.dialog_pixel_settings, null)
-//        val widthInput = dialogView.findViewById<EditText>(R.id.etWidth)
-//        val heightInput = dialogView.findViewById<EditText>(R.id.etHeight)
-//        val sizeInput = dialogView.findViewById<EditText>(R.id.etPixelSize)
-//        val gridCheckbox = dialogView.findViewById<CheckBox>(R.id.cbShowGrid)
-//
-//        widthInput.setText("50")
-//        heightInput.setText("50")
-//        sizeInput.setText("15")
-//
-//        val dialog = AlertDialog.Builder(this)
-//            .setTitle("Cài đặt Pixel Art")
-//            .setView(dialogView)
-//            .setPositiveButton("OK") { _, _ ->
-//                val width = (widthInput.text.toString().toIntOrNull() ?: 50).coerceAtLeast(10)
-//                val height = (heightInput.text.toString().toIntOrNull() ?: 50).coerceAtLeast(10)
-//                val size = (sizeInput.text.toString().toIntOrNull() ?: 10).coerceAtLeast(10)
-//
-//                binding.drawingView.enablePixelMode(
-//                    size, width, height,
-//                    gridCheckbox.isChecked
-//                )
-//            }
-//            .setNegativeButton("Hủy", null)
-//            .create()
-//
-//        dialog.show()
-//
-//        val textWatcher = object : android.text.TextWatcher {
-//            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-//            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-//            override fun afterTextChanged(s: Editable?) {
-//                val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-//                val widthValid = widthInput.text.toString().toIntOrNull()?.let { it >= 10 } ?: false
-//                val heightValid = heightInput.text.toString().toIntOrNull()?.let { it >= 10 } ?: false
-//                val sizeValid = sizeInput.text.toString().toIntOrNull()?.let { it >= 10 } ?: false
-//                positiveButton.isEnabled = widthValid && heightValid && sizeValid
-//            }
-//        }
-//
-//        widthInput.addTextChangedListener(textWatcher)
-//        heightInput.addTextChangedListener(textWatcher)
-//        sizeInput.addTextChangedListener(textWatcher)
-//    }
-fun showPixelSettingsDialog() {
-    val dialogView = layoutInflater.inflate(R.layout.dialog_pixel_settings, null)
-    val dialog = Dialog(this)
-    dialog.setContentView(dialogView)
-    dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+    private fun showTemplateSelectionDialog() {
+        isGeometryToolActive = false
+        binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
 
-    val widthInput = dialogView.findViewById<EditText>(R.id.etWidth)
-    val heightInput = dialogView.findViewById<EditText>(R.id.etHeight)
-    val sizeInput = dialogView.findViewById<EditText>(R.id.etPixelSize)
-    val gridCheckbox = dialogView.findViewById<CheckBox>(R.id.cbShowGrid)
+        // Khởi tạo dialog
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_template_selection)
+        dialog.setCancelable(true)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        // Khởi tạo các view trong dialog
+        val whiteTemplate = dialog.findViewById<LinearLayout>(R.id.whiteTemplate)
+        val linedTemplate = dialog.findViewById<LinearLayout>(R.id.linedTemplate)
+        val gridTemplate = dialog.findViewById<LinearLayout>(R.id.gridTemplate)
+        val dottedTemplate = dialog.findViewById<LinearLayout>(R.id.dottedTemplate)
+        val closeButton = dialog.findViewById<Button>(R.id.btnCloseDialog)
 
-    widthInput.setText("50")
-    heightInput.setText("50")
-    sizeInput.setText("15")
-
-    val okButton = dialogView.findViewById<Button>(R.id.ok_button)
-    okButton.isEnabled = true // Mặc định bật
-
-    val textWatcher = object : android.text.TextWatcher {
-        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        override fun afterTextChanged(s: Editable?) {
-            val widthValid = widthInput.text.toString().toIntOrNull()?.let { it >= 10 } ?: false
-            val heightValid = heightInput.text.toString().toIntOrNull()?.let { it >= 10 } ?: false
-            val sizeValid = sizeInput.text.toString().toIntOrNull()?.let { it >= 10 } ?: false
-            okButton.isEnabled = widthValid && heightValid && sizeValid
+        whiteTemplate.setOnClickListener {
+            viewModel.setBackgroundTemplate("white", binding.drawingView)
+            dialog.dismiss()
         }
+
+        linedTemplate.setOnClickListener {
+            viewModel.setBackgroundTemplate("lined", binding.drawingView)
+            dialog.dismiss()
+        }
+
+        gridTemplate.setOnClickListener {
+            viewModel.setBackgroundTemplate("grid", binding.drawingView)
+            dialog.dismiss()
+        }
+
+        dottedTemplate.setOnClickListener {
+            viewModel.setBackgroundTemplate("dotted", binding.drawingView)
+            dialog.dismiss()
+        }
+
+        closeButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
-    widthInput.addTextChangedListener(textWatcher)
-    heightInput.addTextChangedListener(textWatcher)
-    sizeInput.addTextChangedListener(textWatcher)
 
-    okButton.setOnClickListener {
-        val width = (widthInput.text.toString().toIntOrNull() ?: 50).coerceAtLeast(10)
-        val height = (heightInput.text.toString().toIntOrNull() ?: 50).coerceAtLeast(10)
-        val size = (sizeInput.text.toString().toIntOrNull() ?: 10).coerceAtLeast(10)
 
-        binding.drawingView.enablePixelMode(
-            size, width, height,
-            gridCheckbox.isChecked
-        )
-        dialog.dismiss()
+    companion object {
+        private const val STORAGE_PERMISSION_CODE = 101
+        private const val PICK_IMAGE_REQUEST = 102
     }
-
-    dialogView.findViewById<Button>(R.id.cancel_button).setOnClickListener {
-        dialog.dismiss()
-    }
-
-    dialog.show()
-}
 }

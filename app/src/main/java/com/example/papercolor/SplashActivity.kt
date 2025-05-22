@@ -2,56 +2,107 @@ package com.example.papercolor
 
 import android.content.Intent
 import android.os.Bundle
-import android.os.Environment
+import android.os.Handler
+import android.os.Looper
+import android.view.View
+import android.widget.Button
 import android.widget.ImageView
-import androidx.activity.enableEdgeToEdge
+import android.widget.ProgressBar
+import android.widget.RelativeLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.example.papercolor.databinding.ActivitySplashBinding
-import java.io.File
 
 class SplashActivity : AppCompatActivity() {
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var newPaperButton: android.widget.ImageView
-    private val savedDrawings = mutableListOf<File>()
+    private lateinit var progressBar: ProgressBar
+    private lateinit var getStartButton: Button
+    private lateinit var nextButton1: Button
+    private lateinit var nextButton2: Button
+    private lateinit var loadingText: TextView
+    private lateinit var adsText: TextView
+
+    // Các layout cho từng màn hình
+    private lateinit var screen1: RelativeLayout
+    private lateinit var screen2: RelativeLayout
+    private lateinit var screen3: RelativeLayout
+    private lateinit var screen4: RelativeLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
 
-        recyclerView = findViewById(R.id.recyclerViewDrawings)
-        newPaperButton = findViewById(R.id.imageViewNewPaper)
+        // Khởi tạo tất cả view
+        progressBar = findViewById(R.id.progressBar)
+        getStartButton = findViewById(R.id.getStartButton)
+        nextButton1 = findViewById(R.id.nextButton1)
+        nextButton2 = findViewById(R.id.nextButton2)
+        loadingText = findViewById(R.id.loadingText)
+        adsText = findViewById(R.id.adsText)
 
-        // Thiết lập RecyclerView với GridLayoutManager (2 cột)
-        recyclerView.layoutManager = GridLayoutManager(this, 2)
-        recyclerView.adapter = DrawingAdapter(savedDrawings) { file ->
-            // Khi chọn tranh, chuyển đến ViewDrawingActivity với đường dẫn tranh
-            val intent = Intent(this, ViewDrawingActivity::class.java)
-            intent.putExtra("DRAWING_PATH", file.absolutePath)
-            startActivity(intent)
-        }
+        // Khởi tạo các màn hình
+        screen1 = findViewById(R.id.screen1)
+        screen2 = findViewById(R.id.screen2)
+        screen3 = findViewById(R.id.screen3)
+        screen4 = findViewById(R.id.screen4)
 
-        // Khi nhấn "New Paper", mở MainActivity để vẽ mới
-        newPaperButton.setOnClickListener {
-            startActivity(Intent(this, MainActivity::class.java))
-        }
+        // Ẩn tất cả các màn hình trừ màn hình đầu tiên
+        screen1.visibility = View.VISIBLE
+        screen2.visibility = View.GONE
+        screen3.visibility = View.GONE
+        screen4.visibility = View.GONE
 
-        // Tải danh sách tranh đã lưu
-        loadSavedDrawings()
+        // Mô phỏng quá trình loading
+        simulateLoading()
+
+        // Xử lý sự kiện khi nhấn nút Next và Get Start
+        setupButtonListeners()
     }
 
-    private fun loadSavedDrawings() {
-        savedDrawings.clear()
-        val dir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-        dir?.listFiles()
-            ?.filter { it.extension == "png" && !it.name.startsWith("draft_") }
-            ?.sortedByDescending { it.lastModified() }
-            ?.forEach { savedDrawings.add(it) }
-        recyclerView.adapter?.notifyDataSetChanged()
+    private fun simulateLoading() {
+        val handler = Handler(Looper.getMainLooper())
+        var progress = 0
+
+        handler.postDelayed(object : Runnable {
+            override fun run() {
+                progress += 5
+                progressBar.progress = progress
+
+                if (progress < 100) {
+                    handler.postDelayed(this, 100)
+                } else {
+                    // Khi loading xong, chuyển sang màn hình 2
+                    handler.post {
+                        screen1.visibility = View.GONE
+                        screen2.visibility = View.VISIBLE
+                    }
+                }
+            }
+        }, 100)
+    }
+
+    private fun setupButtonListeners() {
+        // Chuyển từ màn hình 2 sang 3
+        nextButton1.setOnClickListener {
+            screen2.visibility = View.GONE
+            screen3.visibility = View.VISIBLE
+        }
+
+        // Chuyển từ màn hình 3 sang 4
+        nextButton2.setOnClickListener {
+            screen3.visibility = View.GONE
+            screen4.visibility = View.VISIBLE
+        }
+
+        // Chuyển từ màn hình 4 sang MainMenu
+        getStartButton.setOnClickListener {
+            startMainMenuActivity()
+        }
+    }
+
+    private fun startMainMenuActivity() {
+        val intent = Intent(this, MainMenuActivity::class.java)
+        startActivity(intent)
+        finish()
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }
 }

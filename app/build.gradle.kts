@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id ("kotlin-parcelize")
 }
 
 android {
@@ -57,8 +58,11 @@ dependencies {
     implementation ("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation ("com.github.skydoves:colorpickerview:2.3.0")
     implementation ("com.github.skydoves:colorpickerview:2.2.4")
+    implementation ("com.google.code.gson:gson:2.10.1")
+    implementation ("com.google.android.material:material:1.6.0")
+    //implementation ("com.github.dhaval2404:colorpicker:2.3")
 
 
 
-    // implementation ("com.kyanogen.signatureview:signature-view:1.2")
+    //implementation ("com.kyanogen.signatureview:signature-view:1.2")
 }
