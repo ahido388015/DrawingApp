@@ -17,7 +17,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import java.io.File
 import android.Manifest
+import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.WindowManager
 
 
 class ViewDrawingActivity : AppCompatActivity() {
@@ -140,7 +142,17 @@ class ViewDrawingActivity : AppCompatActivity() {
             .setCancelable(true)
             .create()
 
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        // Đặt nền trong suốt và căn giữa dialog
+        dialog.window?.apply {
+            setBackgroundDrawableResource(android.R.color.transparent)
+            // Căn giữa dialog trên màn hình
+            setGravity(Gravity.CENTER)
+            // Tùy chọn: Điều chỉnh kích thước dialog (nếu cần)
+            val params = attributes
+            params.width = WindowManager.LayoutParams.WRAP_CONTENT
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT
+            attributes = params
+        }
 
         val btnKeep = dialogView.findViewById<Button>(R.id.btnKeep)
         val btnDelete = dialogView.findViewById<Button>(R.id.btnDelete)

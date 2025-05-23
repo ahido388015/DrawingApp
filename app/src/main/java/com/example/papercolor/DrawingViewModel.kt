@@ -70,6 +70,9 @@ class DrawingViewModel : ViewModel() {
         }
         return newEraseMode
     }
+    fun setEraseMode(size: Float, drawingView: DrawingView) {
+        drawingView.setEraseMode(size)
+    }
 
 
     // Hàm để bật chế độ văn bản
@@ -108,43 +111,42 @@ class DrawingViewModel : ViewModel() {
         drawingView.disablePixelMode()
     }
 
-    // Hàm để bật/tắt lưới pixel
+    // bật/tắt lưới pixel
     fun togglePixelGrid(show: Boolean, drawingView: DrawingView) {
         showPixelGrid.value = show
         drawingView.togglePixelGrid(show)
     }
 
-    // Hàm để chọn công cụ hình học
+    // chọn công cụ hình học
     fun setGeometryTool(tool: DrawingView.GeometryTool, drawingView: DrawingView) {
         currentGeometryTool.value = tool
         drawingView.setGeometryTool(tool)
         disableOtherModes(drawingView, except = "geometry")
     }
 
-    // Hàm để tắt công cụ hình học
+    // tắt công cụ hình học
     fun disableGeometryMode(drawingView: DrawingView) {
         currentGeometryTool.value = DrawingView.GeometryTool.NONE
         drawingView.disableGeometryMode()
     }
 
-    // Hàm để bật chế độ điều chỉnh ảnh
+    //bật chế độ điều chỉnh ảnh
     fun enableImageAdjustMode(drawingView: DrawingView) {
         isImageAdjustMode.value = true
         drawingView.enableImageAdjustMode()
         disableOtherModes(drawingView, except = "image_adjust")
     }
 
-    // Hàm để đặt template nền
+    //đặt template nền
     fun setBackgroundTemplate(templateType: String, drawingView: DrawingView) {
         currentTemplate.value = templateType
         drawingView.setBackgroundTemplate(templateType)
     }
 
-    // Hàm để đặt màu nền
+    // đặt màu nền
     fun setCanvasBackgroundColor(color: Int, drawingView: DrawingView) {
         backgroundColor.value = color
         drawingView.setCanvasBackgroundColor(color)
-        // Không gọi disableOtherModes để giữ các chế độ hiện tại (pixel mode, text mode, v.v.)
     }
 
     // Hàm để thêm ảnh

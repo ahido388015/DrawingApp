@@ -691,15 +691,55 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     }
 
     fun setColor(color: Int) {
-        isEraseMode = false // Tắt chế độ tẩy khi chọn màu
-        paint.color = color
+        if (isEraseMode) {
+            isEraseMode = false
+            savedPaintState?.let { paint = Paint(it) } ?: run {
+                paint = Paint().apply {
+                    isAntiAlias = true
+                    style = Paint.Style.STROKE
+                    strokeWidth = 5f
+                    paint.color = color // Sử dụng màu mới
+                    strokeCap = Paint.Cap.ROUND
+                    strokeJoin = Paint.Join.ROUND
+                }
+            }
+            savedPaintState = null
+        } else {
+            paint.color = color
+        }
         pixelDefaultPaint.color = color
     }
 
     fun setBrushStyle(style: String) {
-        isEraseMode = false
+        // Tắt chế độ tẩy nếu đang bật
+        if (isEraseMode) {
+            isEraseMode = false
+            savedPaintState?.let { paint = Paint(it) } ?: run {
+                paint = Paint().apply {
+                    isAntiAlias = true
+                    paint.style = Paint.Style.STROKE
+                    strokeWidth = 5f
+                    color = paint.color
+                    strokeCap = Paint.Cap.ROUND
+                    strokeJoin = Paint.Join.ROUND
+                }
+            }
+            savedPaintState = null
+        }
 
         if (isPixelMode) return
+
+        // Đặt lại tất cả thuộc tính của paint để tránh ảnh hưởng từ các kiểu trước
+        paint = Paint().apply {
+            isAntiAlias = true
+            color = paint.color // Giữ màu hiện tại
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+            shader = null
+            pathEffect = null
+            maskFilter = null
+        }
+
         when (style) {
             "marker" -> {
                 paint.strokeWidth = 10f
@@ -707,8 +747,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                 paint.strokeCap = Paint.Cap.ROUND
                 paint.strokeJoin = Paint.Join.ROUND
                 paint.alpha = 255
-                paint.shader = null
-                paint.pathEffect = null
                 paint.maskFilter = BlurMaskFilter(3f, BlurMaskFilter.Blur.INNER)
             }
             "feather" -> {
@@ -717,8 +755,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                 paint.strokeCap = Paint.Cap.ROUND
                 paint.strokeJoin = Paint.Join.ROUND
                 paint.alpha = 180
-                paint.shader = null
-                paint.pathEffect = null
                 paint.maskFilter = BlurMaskFilter(2f, BlurMaskFilter.Blur.NORMAL)
             }
             "pencil" -> {
@@ -727,9 +763,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                 paint.strokeCap = Paint.Cap.ROUND
                 paint.strokeJoin = Paint.Join.ROUND
                 paint.alpha = 230
-                paint.shader = null
-                paint.pathEffect = DiscretePathEffect(4f, 1f)
-                paint.maskFilter = BlurMaskFilter(1.7f, BlurMaskFilter.Blur.NORMAL)
                 paint.pathEffect = ComposePathEffect(
                     CornerPathEffect(5f),
                     PathDashPathEffect(
@@ -739,6 +772,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                         PathDashPathEffect.Style.ROTATE
                     )
                 )
+                paint.maskFilter = BlurMaskFilter(1.7f, BlurMaskFilter.Blur.NORMAL)
             }
             "ink" -> {
                 paint.strokeWidth = 2f
@@ -746,9 +780,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                 paint.strokeCap = Paint.Cap.ROUND
                 paint.strokeJoin = Paint.Join.ROUND
                 paint.alpha = 180
-                paint.shader = null
-                paint.pathEffect = null
-                paint.maskFilter = null
             }
             "fountain_pen" -> {
                 paint.strokeWidth = 10f
@@ -756,7 +787,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                 paint.strokeCap = Paint.Cap.ROUND
                 paint.strokeJoin = Paint.Join.ROUND
                 paint.alpha = 250
-                paint.shader = null
                 paint.maskFilter = BlurMaskFilter(1.2f, BlurMaskFilter.Blur.NORMAL)
                 paint.pathEffect = ComposePathEffect(
                     CornerPathEffect(5f),
@@ -783,21 +813,23 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                     null,
                     Shader.TileMode.CLAMP
                 )
-                paint.pathEffect = null
                 paint.maskFilter = BlurMaskFilter(2.5f, BlurMaskFilter.Blur.NORMAL)
             }
             "magicBrush" -> {
-                    paint.isAntiAlias = true
-                    paint.style = Paint.Style.FILL
-                    paint.strokeWidth = 5f
+                paint.isAntiAlias = true
+                paint.style = Paint.Style.FILL
+                paint.strokeWidth = 5f
+                paint.alpha = 255
+                paint.maskFilter = null // Đảm bảo không có hiệu ứng mờ
+                paint.pathEffect = null // Đảm bảo không có path effect
             }
         }
         geometryMode = GeometryTool.NONE
         tempPath.reset()
         isDrawingGeometry = false
         isAdjustingImageMode = false
+        invalidate()
     }
-
     private fun createPressurePath(): Path {
         val path = Path()
         path.moveTo(0f, 0f)
@@ -820,7 +852,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             if (!isPixelMode) {
                 // Lưu state path hiẹn tại
                 savedPaintState = Paint(paint)
-                paint = Paint(erasePaint) // Sử dụng erasePaint cho chế độ thường
+                paint = Paint(erasePaint) //  erasePaint cho chế độ thường
             }
         }
         geometryMode = GeometryTool.NONE
@@ -828,6 +860,16 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         isDrawingGeometry = false
         isAdjustingImageMode = false
     }
+
+//    fun setEraseMode(size: Float) {
+//        isEraseMode = true
+//        if (!isPixelMode) {
+//            savedPaintState = Paint(paint)
+//            erasePaint.strokeWidth = size
+//            paint = Paint(erasePaint)
+//        }
+//        invalidate()
+//    }
 
     fun setEraseMode(size: Float) {
         isEraseMode = true
@@ -838,7 +880,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         }
         invalidate()
     }
-
     fun undo(): Boolean {
         if (actions.isEmpty()) return false
 
@@ -969,12 +1010,22 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         return backgroundColor
     }
 
-    fun enableTextMode(
-        text: String,
-        fontFamily: String = "sans-serif",
-        textSize: Float = 24f,
-        textColor: Int = Color.BLACK
-    ) {
+    fun enableTextMode(text: String, fontFamily: String = "sans-serif", textSize: Float = 24f, textColor: Int = Color.BLACK) {
+        if (isEraseMode) {
+            isEraseMode = false
+            savedPaintState?.let { paint = Paint(it) } ?: run {
+                paint = Paint().apply {
+                    isAntiAlias = true
+                    style = Paint.Style.STROKE
+                    strokeWidth = 5f
+                    color = paint.color
+                    strokeCap = Paint.Cap.ROUND
+                    strokeJoin = Paint.Join.ROUND
+                }
+            }
+            savedPaintState = null
+        }
+
         isTextMode = true
         currentText = text
         currentFontFamily = fontFamily
@@ -982,7 +1033,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         currentTextColor = textColor
         isPixelMode = false
         geometryMode = GeometryTool.NONE
-        isEraseMode = false
         isDrawingGeometry = false
         isAdjustingImageMode = false
 
@@ -999,7 +1049,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             isAntiAlias = true
         }
         previewTextItem = TextItem(currentText!!, 0f, 0f, textPaint)
-
         invalidate()
     }
 
@@ -1045,6 +1094,21 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     }
 
     fun enableImageAdjustMode() {
+        // Tắt chế độ tẩy nếu đang bật
+        if (isEraseMode) {
+            isEraseMode = false
+            savedPaintState?.let { paint = Paint(it) } ?: run {
+                paint = Paint().apply {
+                    isAntiAlias = true
+                    paint.style = Paint.Style.STROKE
+                    strokeWidth = 5f
+                    color = paint.color
+                    strokeCap = Paint.Cap.ROUND
+                    strokeJoin = Paint.Join.ROUND
+                }
+            }
+            savedPaintState = null
+        }
         isAdjustingImageMode = true
         isPixelMode = false
         isTextMode = false
@@ -1065,6 +1129,21 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     fun enablePixelMode(pixelSize: Int, widthInPixels: Int, heightInPixels: Int, showGrid: Boolean = true) {
         if (imageItems.isNotEmpty()) return
 
+        if (isEraseMode) {
+            isEraseMode = false
+            savedPaintState?.let { paint = Paint(it) } ?: run {
+                paint = Paint().apply {
+                    isAntiAlias = true
+                    style = Paint.Style.STROKE
+                    strokeWidth = 5f
+                    color = paint.color
+                    strokeCap = Paint.Cap.ROUND
+                    strokeJoin = Paint.Join.ROUND
+                }
+            }
+            savedPaintState = null
+        }
+
         isPixelMode = true
         this.pixelSize = pixelSize.toFloat()
         this.canvasWidthInPixels = widthInPixels
@@ -1072,7 +1151,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         this.showPixelGrid = showGrid
         isTextMode = false
         geometryMode = GeometryTool.NONE
-        isEraseMode = false
         isDrawingGeometry = false
         isAdjustingImageMode = false
 
@@ -1082,7 +1160,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         }
 
         pixelDefaultPaint.color = paint.color
-        setBackgroundTemplate("white") // Đặt template về plain trong pixel mode
+        setBackgroundTemplate("white")
         invalidate()
     }
 
@@ -1099,10 +1177,24 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     }
 
     fun setGeometryTool(tool: GeometryTool) {
+        if (isEraseMode) {
+            isEraseMode = false
+            savedPaintState?.let { paint = Paint(it) } ?: run {
+                paint = Paint().apply {
+                    isAntiAlias = true
+                    style = Paint.Style.STROKE
+                    strokeWidth = 5f
+                    color = paint.color
+                    strokeCap = Paint.Cap.ROUND
+                    strokeJoin = Paint.Join.ROUND
+                }
+            }
+            savedPaintState = null
+        }
+
         geometryMode = tool
         isPixelMode = false
         isTextMode = false
-        isEraseMode = false
         isDrawingGeometry = false
         isAdjustingImageMode = false
 
@@ -1115,6 +1207,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         tempPath.reset()
         invalidate()
     }
+
 
     fun disableGeometryMode() {
         geometryMode = GeometryTool.NONE

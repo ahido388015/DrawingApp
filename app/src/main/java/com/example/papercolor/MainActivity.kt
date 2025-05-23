@@ -47,6 +47,7 @@ class MainActivity : AppCompatActivity() {
             binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
             binding.colorButton.setImageResource(R.drawable.ic_color_red)
             binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
+            binding.eraseButton.setImageResource(R.drawable.ic_erasers_gray)
 
             ColorPickerDialog.Builder(this, R.style.CustomDialogTheme)
                 .setTitle("Selected Color")
@@ -69,6 +70,8 @@ class MainActivity : AppCompatActivity() {
             binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
             binding.brushButton.setImageResource(R.drawable.ic_brush_green)
             binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
+            binding.eraseButton.setImageResource(R.drawable.ic_erasers_gray)
+
 
             val dialogView = layoutInflater.inflate(R.layout.dialog_brush_selection, null)
             val dialog = Dialog(this)
@@ -136,6 +139,7 @@ class MainActivity : AppCompatActivity() {
         }
 
 
+
         binding.undoButton.setOnClickListener {
             viewModel.undo(binding.drawingView)
         }
@@ -148,6 +152,7 @@ class MainActivity : AppCompatActivity() {
             isGeometryToolActive = false
             binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
             binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
+            binding.eraseButton.setImageResource(R.drawable.ic_erasers_gray)
             viewModel.clear(binding.drawingView)
             if (viewModel.isPixelModeEnabled.value == true) {
                 viewModel.isPixelModeEnabled.value = false
@@ -213,34 +218,37 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+
 //    private fun showEraseSizeDialog(onSizeSelected: (Float) -> Unit) {
-//        val dialog = BottomSheetDialog(this)
-//        val view = layoutInflater.inflate(R.layout.dialog_erase_size, null)
-//        dialog.setContentView(view)
+//        val dialogView = layoutInflater.inflate(R.layout.dialog_eraser_size, null)
+//        val dialog = Dialog(this)
+//        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+//        dialog.setContentView(dialogView)
+//        dialog.setCancelable(true)
+//        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 //
-//        // Ánh xạ các view kích thước
-//        val size10 = view.findViewById<View>(R.id.btn_size_10)
-//        val size20 = view.findViewById<View>(R.id.btn_size_20)
-//        val size30 = view.findViewById<View>(R.id.btn_size_30)
-//        val size40 = view.findViewById<View>(R.id.btn_size_40)
+//        val seekBar = dialogView.findViewById<SeekBar>(R.id.eraseSizeSeekBar)
+//        val sizeText = dialogView.findViewById<TextView>(R.id.eraseSizeValue)
 //
-//        // Xử lý sự kiện click cho từng kích thước
-//        size10.setOnClickListener {
-//            onSizeSelected(10f)
-//            dialog.dismiss()
+//        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+//            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+//                sizeText.text = "Size: $progress"
+//            }
+//
+//            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+//
+//            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+//                val selectedSize = seekBar?.progress?.toFloat()?.coerceIn(5f, 100f) ?: 20f
+//                onSizeSelected(selectedSize)
+//                dialog.dismiss()
+//                binding.eraseButton.setImageResource(R.drawable.ic_erasers_green)
+//            }
+//        })
+//
+//        dialog.setOnCancelListener {
+//            binding.eraseButton.setImageResource(R.drawable.ic_erasers_gray)
 //        }
-//        size20.setOnClickListener {
-//            onSizeSelected(20f)
-//            dialog.dismiss()
-//        }
-//        size30.setOnClickListener {
-//            onSizeSelected(30f)
-//            dialog.dismiss()
-//        }
-//        size40.setOnClickListener {
-//            onSizeSelected(40f)
-//            dialog.dismiss()
-//        }
+//
 //        dialog.show()
 //    }
 
@@ -249,6 +257,7 @@ class MainActivity : AppCompatActivity() {
         binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
         binding.textButton.setImageResource(R.drawable.ic_textmode_green)
         binding.pixelButton.setImageResource(R.drawable.ic_pixelmode_green)
+        binding.eraseButton.setImageResource(R.drawable.ic_erasers_gray)
 
         val dialogView = layoutInflater.inflate(R.layout.dialog_text_input, null)
 
@@ -309,6 +318,7 @@ class MainActivity : AppCompatActivity() {
         binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
         binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
         binding.pixelButton.setImageResource(R.drawable.ic_pixelmode_green)
+        binding.eraseButton.setImageResource(R.drawable.ic_erasers_gray)
         binding.saveButton.setImageResource(R.drawable.ic_save_red)
 
         val dialogView = layoutInflater.inflate(R.layout.dialog_adjust, null)
@@ -434,6 +444,7 @@ class MainActivity : AppCompatActivity() {
     private fun showGeometryToolDialog() {
         binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
         binding.pixelButton.setImageResource(R.drawable.ic_pixelmode_green)
+        binding.eraseButton.setImageResource(R.drawable.ic_erasers_gray)
         if (!isGeometryToolActive) {
             binding.geometryButton.setImageResource(R.drawable.ic_geometry_green)
         }
@@ -506,6 +517,7 @@ class MainActivity : AppCompatActivity() {
         binding.textButton.setImageResource(R.drawable.ic_textmode_gray)
         isGeometryToolActive = false
         binding.geometryButton.setImageResource(R.drawable.ic_geometry_gray)
+        binding.eraseButton.setImageResource(R.drawable.ic_erasers_gray)
 
         val dialogView = layoutInflater.inflate(R.layout.dialog_pixel_settings, null)
         val dialog = Dialog(this)
@@ -583,6 +595,7 @@ class MainActivity : AppCompatActivity() {
 
         linedTemplate.setOnClickListener {
             viewModel.setBackgroundTemplate("lined", binding.drawingView)
+            binding.templateButton.setImageResource(R.drawable.ic_temp_line)
             dialog.dismiss()
         }
 
@@ -593,10 +606,12 @@ class MainActivity : AppCompatActivity() {
 
         dottedTemplate.setOnClickListener {
             viewModel.setBackgroundTemplate("dotted", binding.drawingView)
+            binding.templateButton.setImageResource(R.drawable.ic_temp_dots)
             dialog.dismiss()
         }
 
         closeButton.setOnClickListener {
+            binding.templateButton.setImageResource(R.drawable.ic_template_green)
             dialog.dismiss()
         }
 

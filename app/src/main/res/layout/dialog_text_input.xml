@@ -111,7 +111,7 @@
             app:backgroundTint="@null"
             android:layout_marginTop="16dp"
             android:textColor="@android:color/white"
-            android:backgroundTint="@color/light_green" />
+            android:backgroundTint="@color/light3_green" />
     </LinearLayout>
 
 </LinearLayout>
