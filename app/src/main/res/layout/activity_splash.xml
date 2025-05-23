@@ -19,12 +19,12 @@
         android:layout_height="match_parent"
         android:padding="20dp">
 
-<!--        <ImageView-->
-<!--            android:id="@+id/imageView2"-->
-<!--            android:layout_width="150dp"-->
-<!--            android:layout_height="150dp"-->
-<!--            android:layout_centerHorizontal="true"-->
-<!--            app:srcCompat="@drawable/favicon_app_splash" />-->
+        <!--        <ImageView-->
+        <!--            android:id="@+id/imageView2"-->
+        <!--            android:layout_width="150dp"-->
+        <!--            android:layout_height="150dp"-->
+        <!--            android:layout_centerHorizontal="true"-->
+        <!--            app:srcCompat="@drawable/favicon_app_splash" />-->
 
         <ImageView
             android:id="@+id/titleImageView"

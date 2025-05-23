@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/light3_green">
+
+    <!-- Background image -->
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:contentDescription="App background"/>
+
+    <!-- Screen 1: Loading screen with progress bar -->
+    <RelativeLayout
+        android:id="@+id/screen1"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="20dp">
+
+        <!--        <ImageView-->
+        <!--            android:id="@+id/imageView2"-->
+        <!--            android:layout_width="150dp"-->
+        <!--            android:layout_height="150dp"-->
+        <!--            android:layout_centerHorizontal="true"-->
+        <!--            app:srcCompat="@drawable/favicon_app_splash" />-->
+
+        <ImageView
+            android:id="@+id/titleImageView"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_marginTop="50dp"
+            android:layout_centerHorizontal="true"
+            android:src="@drawable/splash_name_app1"
+            android:contentDescription="App title" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="200dp"
+            android:layout_height="10dp"
+            android:layout_below="@id/titleImageView"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="30dp"
+            android:progressDrawable="@drawable/progress_bar_style" />
+
+        <TextView
+            android:id="@+id/loadingText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/progressBar"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="10dp"
+            android:text="Loading..."
+            android:textColor="@color/white" />
+
+        <TextView
+            android:id="@+id/adsText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/loadingText"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="5dp"
+            android:text="This action may contain ads"
+            android:textColor="@color/gray" />
+
+        <TextView
+            android:id="@+id/versionText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="20dp"
+            android:text="Version 1.0"
+            android:textColor="@color/gray" />
+    </RelativeLayout>
+
+    <!-- Screen 2: First intro screen -->
+    <RelativeLayout
+        android:id="@+id/screen2"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="20dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/splashImage2"
+            android:layout_width="wrap_content"
+            android:layout_height="300dp"
+            android:layout_marginTop="20dp"
+            android:layout_centerHorizontal="true"
+            android:src="@drawable/img_splash_1"
+            android:contentDescription="Easy Draw - Color" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/splashImage2"
+            android:layout_marginTop="10dp"
+            android:paddingHorizontal="0dp"
+            android:gravity="center_vertical"
+            android:backgroundTint="@color/white"
+            android:background="@drawable/bg_new_paper_and_list"
+            android:orientation="horizontal"
+            >
+
+            <ImageView
+                android:layout_width="0dp"
+                android:layout_height="10dp"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:layout_gravity="center"
+                android:src="@drawable/step_1"
+                android:contentDescription="Step Indicator 1" />
+
+            <Button
+                android:id="@+id/nextButton1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_gravity="end"
+                android:layout_marginStart="40dp"
+                android:text="Next >"
+                android:textColor="@color/light_green"
+                android:textSize="12sp"
+                android:textStyle="italic"
+                style="?android:attr/borderlessButtonStyle" />
+        </LinearLayout>
+    </RelativeLayout>
+
+    <!-- Screen 3: Second intro screen -->
+    <RelativeLayout
+        android:id="@+id/screen3"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="20dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/splashImage3"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_marginTop="20dp"
+            android:layout_centerHorizontal="true"
+            android:src="@drawable/img_splash_2"
+            android:contentDescription="Pick a Tool" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/splashImage3"
+            android:layout_marginTop="10dp"
+            android:paddingHorizontal="0dp"
+            android:gravity="center_vertical"
+            android:backgroundTint="@color/white"
+            android:background="@drawable/bg_new_paper_and_list"
+            android:orientation="horizontal"
+            >
+
+            <ImageView
+                android:layout_width="0dp"
+                android:layout_height="10dp"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:layout_gravity="center"
+                android:src="@drawable/step_2"
+                android:contentDescription="Step Indicator 2" />
+
+            <Button
+                android:id="@+id/nextButton2"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_gravity="end"
+                android:layout_marginStart="40dp"
+                android:text="Next >"
+                android:textColor="@color/light_green"
+                android:textSize="12sp"
+                android:textStyle="italic"
+                style="?android:attr/borderlessButtonStyle" />
+        </LinearLayout>
+    </RelativeLayout>
+
+    <!-- Screen 4: Final intro screen -->
+    <RelativeLayout
+        android:id="@+id/screen4"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="20dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/splashImage4"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_marginTop="20dp"
+            android:layout_centerHorizontal="true"
+            android:src="@drawable/img_splash_3"
+            android:contentDescription="Classic - Pixel Modes" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/splashImage4"
+            android:layout_marginTop="10dp"
+            android:paddingHorizontal="0dp"
+            android:gravity="center_vertical"
+            android:backgroundTint="@color/white"
+            android:background="@drawable/bg_new_paper_and_list"
+            android:orientation="horizontal"
+            >
+
+            <ImageView
+                android:layout_width="0dp"
+                android:layout_height="10dp"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:layout_gravity="center"
+                android:src="@drawable/step_3"
+                android:contentDescription="Step Indicator 3" />
+
+            <Button
+                android:id="@+id/getStartButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_gravity="end"
+                android:layout_marginStart="40dp"
+                android:text="Get started >"
+                android:textColor="@color/light_green"
+                android:textSize="12sp"
+                android:textStyle="italic"
+                style="?android:attr/borderlessButtonStyle" />
+        </LinearLayout>
+    </RelativeLayout>
+</RelativeLayout>

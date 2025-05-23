@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id ("kotlin-parcelize")
+    id ("androidx.navigation.safeargs")
 }
 
 android {
@@ -60,6 +61,10 @@ dependencies {
     implementation ("com.github.skydoves:colorpickerview:2.2.4")
     implementation ("com.google.code.gson:gson:2.10.1")
     implementation ("com.google.android.material:material:1.6.0")
+    implementation ("androidx.fragment:fragment-ktx:1.6.2")
+    implementation ("androidx.navigation:navigation-fragment-ktx:2.7.7")
+    implementation ("androidx.navigation:navigation-ui-ktx:2.7.7")
+   // implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2'
     //implementation ("com.github.dhaval2404:colorpicker:2.3")
 
 

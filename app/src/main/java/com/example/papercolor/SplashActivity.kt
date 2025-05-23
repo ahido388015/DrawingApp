@@ -10,8 +10,11 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.TextView
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-
+import com.example.papercolor.databinding.ActivitySplashBinding
+import com.example.papercolor.ui.splash.SplashFragment
+import com.example.papercolor.ui.splash.SplashViewModel
 class SplashActivity : AppCompatActivity() {
 
     private lateinit var progressBar: ProgressBar

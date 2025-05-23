@@ -6,6 +6,7 @@ import android.os.Environment
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.papercolor.ui.home.DrawingAdapter
 import java.io.File
 
 class MainMenuActivity : AppCompatActivity() {
@@ -29,13 +30,9 @@ class MainMenuActivity : AppCompatActivity() {
             intent.putExtra("DRAWING_PATH", file.absolutePath)
             startActivity(intent)
         }
-
-        // Khi nhấn "New Paper", mở MainActivity để vẽ mới
         newPaperButton.setOnClickListener {
             startActivity(Intent(this, MainActivity::class.java))
         }
-
-        // Tải danh sách tranh đã lưu
         loadSavedDrawings()
     }
 
